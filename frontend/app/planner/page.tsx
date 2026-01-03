@@ -15,11 +15,9 @@ import { SemesterCard } from "@/components/planner/semester-card";
 import { AddModuleDialog } from "@/components/planner/add-module-dialog";
 import { AddSemesterDialog } from "@/components/planner/add-semester-dialog";
 import { DeleteConfirmationDialog } from "@/components/planner/delete-confirmation-dialog";
-import { calculateTotalMC } from "@/components/planner/planner-utils";
 import { SortableModuleCard } from "@/components/planner/sortable-module-card";
 import { SemesterModules } from "@/types/plan";
 
-// TODO: Need to refractor calling database for module MCs prolly need to store it in plan or something
 export default function PlannerPage() {
   const router = useRouter();
   const searchParams = useSearchParams();

@@ -1,4 +1,4 @@
-import { SemesterModules, SemesterPlan } from "@/types/plan";
+import { SemesterModules } from "@/types/plan";
 import {
   useSensors,
   useSensor,
@@ -40,6 +40,10 @@ export async function handleModuleDragEnd({
   const [activeSemester, activeModule] = activeId.split("-");
   const [overSemester, overModule] = overId.split("-");
 
+  const mcs = semesterPlan[activeSemester].find(
+    (m) => m.module === activeModule
+  )?.mcs;
+
   if (!activeSemester || !activeModule || !overSemester) return;
 
   // If dragging to a different semester
@@ -63,11 +67,14 @@ export async function handleModuleDragEnd({
       );
       newSemesterPlan[overSemester].splice(overIndex, 0, {
         module: activeModule,
-        mcs: 0,
+        mcs: mcs ?? 0,
       });
     } else {
       // If dropping on semester container, add to end
-      newSemesterPlan[overSemester].push({ module: activeModule, mcs: 0 });
+      newSemesterPlan[overSemester].push({
+        module: activeModule,
+        mcs: mcs ?? 0,
+      });
     }
 
     await onUpdate(newSemesterPlan);
