@@ -15,11 +15,9 @@ import { SemesterCard } from "@/components/planner/semester-card";
 import { AddModuleDialog } from "@/components/planner/add-module-dialog";
 import { AddSemesterDialog } from "@/components/planner/add-semester-dialog";
 import { DeleteConfirmationDialog } from "@/components/planner/delete-confirmation-dialog";
-import {
-  calculateSemesterMC,
-  calculateTotalMC,
-} from "@/components/planner/planner-utils";
+import { calculateTotalMC } from "@/components/planner/planner-utils";
 import { SortableModuleCard } from "@/components/planner/sortable-module-card";
+import { SemesterModules } from "@/types/plan";
 
 // TODO: Need to refractor calling database for module MCs prolly need to store it in plan or something
 export default function PlannerPage() {
@@ -36,6 +34,12 @@ export default function PlannerPage() {
   const isLoading = planId ? specificLoading : activeLoading;
 
   const updatePlan = useUpdatePlan();
+
+  const totalMC = plan?.semesterPlan
+    ? Object.values(plan.semesterPlan)
+        .flat()
+        .reduce((acc, module) => acc + module.mcs, 0)
+    : 0;
 
   // UI State
   const [searchQuery, setSearchQuery] = useState("");
@@ -64,60 +68,6 @@ export default function PlannerPage() {
   const searchResults = useSemanticMode ? semanticResults : traditionalResults;
   const searchLoading = useSemanticMode ? semanticLoading : traditionalLoading;
 
-  // Get all modules for MC calculations - need to fetch in batches due to backend limit
-  const { data: batch1 } = useModuleSearch({
-    search: "",
-    limit: 1000,
-    offset: 0,
-  });
-  const { data: batch2 } = useModuleSearch({
-    search: "",
-    limit: 1000,
-    offset: 1000,
-  });
-  const { data: batch3 } = useModuleSearch({
-    search: "",
-    limit: 1000,
-    offset: 2000,
-  });
-  const { data: batch4 } = useModuleSearch({
-    search: "",
-    limit: 1000,
-    offset: 3000,
-  });
-  const { data: batch5 } = useModuleSearch({
-    search: "",
-    limit: 1000,
-    offset: 4000,
-  });
-  const { data: batch6 } = useModuleSearch({
-    search: "",
-    limit: 1000,
-    offset: 5000,
-  });
-  const { data: batch7 } = useModuleSearch({
-    search: "",
-    limit: 1000,
-    offset: 6000,
-  });
-  const { data: batch8 } = useModuleSearch({
-    search: "",
-    limit: 1000,
-    offset: 7000,
-  });
-
-  // Combine all batches
-  const allModules = [
-    ...(batch1?.modules || []),
-    ...(batch2?.modules || []),
-    ...(batch3?.modules || []),
-    ...(batch4?.modules || []),
-    ...(batch5?.modules || []),
-    ...(batch6?.modules || []),
-    ...(batch7?.modules || []),
-    ...(batch8?.modules || []),
-  ];
-
   // Handlers
   const handleUpdateName = async (name: string) => {
     if (!plan || !name.trim()) return;
@@ -127,10 +77,11 @@ export default function PlannerPage() {
     });
   };
 
-  const handleAddModule = async (moduleCode: string) => {
+  const handleAddModule = async (moduleCode: string, mcs: number) => {
     if (!plan || !selectedSemester) return;
 
-    const currentModules = plan.semesterPlan[selectedSemester] || [];
+    const currentModules =
+      plan.semesterPlan[selectedSemester].map((m) => m.module) || [];
 
     if (currentModules.includes(moduleCode)) {
       alert("Module already added to this semester!");
@@ -139,7 +90,10 @@ export default function PlannerPage() {
 
     const newSemesterPlan = {
       ...plan.semesterPlan,
-      [selectedSemester]: [...currentModules, moduleCode],
+      [selectedSemester]: [
+        ...plan.semesterPlan[selectedSemester],
+        { module: moduleCode, mcs: mcs },
+      ],
     };
 
     await updatePlan.mutateAsync({
@@ -156,9 +110,7 @@ export default function PlannerPage() {
 
     const { semester, moduleCode } = moduleToDelete;
     const currentModules = plan.semesterPlan[semester] || [];
-    const newModules = currentModules.filter(
-      (code: string) => code !== moduleCode
-    );
+    const newModules = currentModules.filter((m) => m.module !== moduleCode);
 
     const newSemesterPlan = {
       ...plan.semesterPlan,
@@ -218,7 +170,7 @@ export default function PlannerPage() {
     await handleModuleDragEnd({
       event,
       semesterPlan: plan.semesterPlan,
-      onUpdate: async (newSemesterPlan: Record<string, string[]>) => {
+      onUpdate: async (newSemesterPlan: Record<string, SemesterModules[]>) => {
         await updatePlan.mutateAsync({
           id: plan.id,
           data: { semesterPlan: newSemesterPlan },
@@ -269,7 +221,7 @@ export default function PlannerPage() {
             <PlannerHeader
               plan={plan}
               onUpdateName={handleUpdateName}
-              calculateTotalMC={() => calculateTotalMC(plan, allModules)}
+              totalMC={totalMC}
             />
 
             <div className="mb-4">
@@ -286,8 +238,11 @@ export default function PlannerPage() {
               {Object.keys(plan.semesterPlan)
                 .sort()
                 .map((semester) => {
-                  const modules = plan.semesterPlan[semester] || [];
-                  const semesterMC = calculateSemesterMC(modules, allModules);
+                  const modules =
+                    plan.semesterPlan[semester].map((m) => m.module) || [];
+                  const semesterMC = plan.semesterPlan[semester]
+                    .map((m) => m.mcs)
+                    .reduce((a, b) => a + b, 0);
 
                   return (
                     <SemesterCard

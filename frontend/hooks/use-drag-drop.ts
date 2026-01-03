@@ -1,3 +1,4 @@
+import { SemesterModules, SemesterPlan } from "@/types/plan";
 import {
   useSensors,
   useSensor,
@@ -18,8 +19,8 @@ export function useDragDropSensors() {
 
 interface DragDropHandlerParams {
   event: DragEndEvent;
-  semesterPlan: Record<string, string[]>;
-  onUpdate: (newPlan: Record<string, string[]>) => Promise<void>;
+  semesterPlan: Record<string, SemesterModules[]>;
+  onUpdate: (newPlan: Record<string, SemesterModules[]>) => Promise<void>;
 }
 
 export async function handleModuleDragEnd({
@@ -48,7 +49,7 @@ export async function handleModuleDragEnd({
     // Remove from old semester
     newSemesterPlan[activeSemester] = (
       newSemesterPlan[activeSemester] || []
-    ).filter((code) => code !== activeModule);
+    ).filter((m) => m.module !== activeModule);
 
     // Add to new semester
     if (!newSemesterPlan[overSemester]) {
@@ -57,20 +58,25 @@ export async function handleModuleDragEnd({
 
     // If dropping on another module, insert before it
     if (overModule) {
-      const overIndex = newSemesterPlan[overSemester].indexOf(overModule);
-      newSemesterPlan[overSemester].splice(overIndex, 0, activeModule);
+      const overIndex = newSemesterPlan[overSemester].findIndex(
+        (m) => m.module === overModule
+      );
+      newSemesterPlan[overSemester].splice(overIndex, 0, {
+        module: activeModule,
+        mcs: 0,
+      });
     } else {
       // If dropping on semester container, add to end
-      newSemesterPlan[overSemester].push(activeModule);
+      newSemesterPlan[overSemester].push({ module: activeModule, mcs: 0 });
     }
 
     await onUpdate(newSemesterPlan);
   } else {
     // Reordering within the same semester
     const modules = semesterPlan[activeSemester] || [];
-    const oldIndex = modules.indexOf(activeModule);
+    const oldIndex = modules.findIndex((m) => m.module === activeModule);
     const newIndex = overModule
-      ? modules.indexOf(overModule)
+      ? modules.findIndex((m) => m.module === overModule)
       : modules.length - 1;
 
     if (oldIndex !== newIndex) {

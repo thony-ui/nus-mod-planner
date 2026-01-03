@@ -9,13 +9,13 @@ import { Plan } from "@/types/plan";
 interface PlannerHeaderProps {
   plan: Plan;
   onUpdateName: (name: string) => Promise<void>;
-  calculateTotalMC: () => number;
+  totalMC: number;
 }
 
 export function PlannerHeader({
   plan,
   onUpdateName,
-  calculateTotalMC,
+  totalMC,
 }: PlannerHeaderProps) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState("");
@@ -69,8 +69,7 @@ export function PlannerHeader({
           )}
           <p className="text-lg text-muted-foreground">{plan.programme}</p>
           <p className="text-sm text-muted-foreground mt-2">
-            Total MCs:{" "}
-            <span className="font-semibold">{calculateTotalMC()}</span>
+            Total MCs: <span className="font-semibold">{totalMC}</span>
           </p>
         </div>
       </div>

@@ -17,7 +17,7 @@ interface AddModuleDialogProps {
   open: boolean;
   semester: string | null;
   onClose: () => void;
-  onAddModule: (moduleCode: string) => void;
+  onAddModule: (moduleCode: string, mcs: number) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   useSemanticMode: boolean;
@@ -97,7 +97,7 @@ export function AddModuleDialog({
               <div
                 key={module.code}
                 className="p-3 border rounded hover:bg-muted cursor-pointer transition-colors"
-                onClick={() => onAddModule(module.code)}
+                onClick={() => onAddModule(module.code, module.mcs)}
               >
                 <div className="flex justify-between items-start gap-2">
                   <div className="flex-1 min-w-0">

@@ -1,9 +1,12 @@
 /**
  * Plan interfaces
  */
-
+interface SemesterModules {
+  module: string;
+  mcs: number;
+}
 export interface SemesterPlan {
-  [semester: string]: string[]; // e.g., { "Y1S1": ["CS1010", "CS1231"], "Y1S2": [...] }
+  [semester: string]: SemesterModules[]; // e.g., { "Y1S1": ["CS1010", "CS1231"], "Y1S2": [...] }
 }
 
 export interface PinnedModules {
@@ -91,7 +94,7 @@ export interface GeneratePlanDto {
   currentSemester: number;
   maxMcPerSemester?: number;
   minMcPerSemester?: number;
-  pacingPreference?: "safe" | "balanced" | "fast" | "easy" | "medium" | "hard";
+  pacingPreference?: "easy" | "medium" | "hard";
   pinnedModules?: PinnedModules;
 }
 

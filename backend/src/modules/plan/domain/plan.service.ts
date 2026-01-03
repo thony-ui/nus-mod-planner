@@ -121,17 +121,8 @@ export class PlanService {
       pinnedModules: dto.pinnedModules || {},
     });
 
-    // Calculate scores
-    const finalPlan = await this.planRepository.updateScores(
-      updatedPlan.id,
-      userId,
-      aiResponse.workloadScore,
-      aiResponse.riskScore,
-      aiResponse.warnings
-    );
-
     return {
-      plan: finalPlan,
+      plan: updatedPlan,
       alternatives: aiResponse.alternatives,
       estimatedGraduation: this.calculateGraduation(aiResponse.semesterPlan),
     };
@@ -292,7 +283,12 @@ export class PlanService {
         );
 
         if (modsForSemester.length > 0) {
-          semesterPlan[semesterKey] = modsForSemester;
+          semesterPlan[semesterKey] = modsForSemester.map(
+            (modCode: string) => ({
+              module: modCode,
+              mcs: 4,
+            })
+          );
           semesterIndex++;
         }
 
@@ -305,9 +301,18 @@ export class PlanService {
     if (dto.pinnedModules) {
       Object.entries(dto.pinnedModules).forEach(([sem, mods]) => {
         if (semesterPlan[sem]) {
-          semesterPlan[sem] = [...new Set([...mods, ...semesterPlan[sem]])];
+          const nonDuplicateMods = [
+            ...new Set([...mods, ...semesterPlan[sem].map((m) => m.module)]),
+          ];
+          semesterPlan[sem] = nonDuplicateMods.map((modCode: string) => ({
+            module: modCode,
+            mcs: 4,
+          }));
         } else {
-          semesterPlan[sem] = mods;
+          semesterPlan[sem] = mods.map((modCode: string) => ({
+            module: modCode,
+            mcs: 4,
+          }));
         }
       });
     }
