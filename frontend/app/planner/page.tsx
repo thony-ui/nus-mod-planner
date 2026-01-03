@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   useActivePlan,
@@ -8,21 +8,18 @@ import {
   useUpdatePlan,
   useGeneratePlan,
 } from "@/hooks/use-plans";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Slider } from "@/components/ui/slider";
-import { ProtectedRoute } from "@/components/protected-route";
 import { useRouter } from "next/navigation";
-import { Loader2, Plus, Settings2, Zap, Edit2, Check, X } from "lucide-react";
+import { Loader2, Plus, Edit2, Check, X, Download } from "lucide-react";
+import { DragEndEvent } from "@dnd-kit/core";
+import { useDragDropSensors, handleModuleDragEnd } from "@/hooks/use-drag-drop";
+import { exportPlanToPDF } from "@/lib/pdf-export";
+import { PlanSettings } from "@/components/planner/plan-settings";
+import { SemesterTimeline } from "@/components/planner/semester-timeline";
+import { ProtectedRoute } from "@/components/layout/protected-route";
 
 export default function PlannerPage() {
   const router = useRouter();
@@ -42,23 +39,11 @@ export default function PlannerPage() {
   const generatePlan = useGeneratePlan();
 
   const [maxMc, setMaxMc] = useState(24);
-  const [minMc, setMinMc] = useState(12);
-  const [pacing, setPacing] = useState<
-    "safe" | "balanced" | "fast" | "easy" | "medium" | "hard"
-  >("balanced");
+  const [minMc, setMinMc] = useState(18);
+  const [pacing, setPacing] = useState<"easy" | "medium" | "hard">("easy");
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState("");
-
-  // Update state when plan changes
-  useEffect(() => {
-    if (plan) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setMaxMc(plan.maxMcPerSemester || 24);
-      setMinMc(plan.minMcPerSemester || 12);
-      setPacing(plan.pacingPreference || "balanced");
-    }
-  }, [plan?.id]); // Only re-run when plan ID changes
 
   const handleUpdateConstraints = async () => {
     if (!plan) return;
@@ -115,6 +100,39 @@ export default function PlannerPage() {
     });
   };
 
+  const planContentRef = useRef<HTMLDivElement>(null);
+
+  const handleExportPDF = async () => {
+    if (!plan) return;
+    await exportPlanToPDF(
+      {
+        name: plan.name,
+        programme: plan.programme,
+        semesterPlan: plan.semesterPlan,
+        minMcPerSemester: plan.minMcPerSemester,
+        maxMcPerSemester: plan.maxMcPerSemester,
+      },
+      `${plan.name}.pdf`
+    );
+  };
+
+  const sensors = useDragDropSensors();
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    if (!plan) return;
+
+    await handleModuleDragEnd({
+      event,
+      semesterPlan: plan.semesterPlan,
+      onUpdate: async (newSemesterPlan) => {
+        await updatePlan.mutateAsync({
+          id: plan.id,
+          data: { semesterPlan: newSemesterPlan },
+        });
+      },
+    });
+  };
+
   if (isLoading) {
     return (
       <ProtectedRoute>
@@ -145,22 +163,20 @@ export default function PlannerPage() {
     );
   }
 
-  const semesters = Object.keys(plan.semesterPlan).sort();
-
   return (
     <ProtectedRoute>
       <div className="min-h-[calc(100vh-64px)] bg-background py-8 px-4">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="mb-8">
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex-1">
+          <div className="mb-6 md:mb-8">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4">
+              <div className="flex-1 min-w-0">
                 {isEditingName ? (
                   <div className="flex items-center gap-2 mb-2">
                     <Input
                       value={editedName}
                       onChange={(e) => setEditedName(e.target.value)}
-                      className="text-4xl font-bold h-auto py-2 max-w-2xl"
+                      className="text-2xl md:text-4xl font-bold h-auto py-2 max-w-2xl"
                       onKeyDown={(e) => {
                         if (e.key === "Enter") handleSaveName();
                         if (e.key === "Escape") handleCancelEdit();
@@ -185,17 +201,20 @@ export default function PlannerPage() {
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 mb-2">
-                    <h1 className="text-4xl font-bold">{plan.name}</h1>
+                    <h1 className="text-2xl md:text-4xl font-bold truncate">
+                      {plan.name}
+                    </h1>
                     <Button
                       size="icon"
                       variant="ghost"
                       onClick={handleStartEditName}
+                      className="shrink-0"
                     >
                       <Edit2 className="h-5 w-5" />
                     </Button>
                   </div>
                 )}
-                <p className="text-lg text-muted-foreground">
+                <p className="text-base md:text-lg text-muted-foreground">
                   {plan.programme}
                 </p>
                 {plan.degreeStructure && (
@@ -203,11 +222,6 @@ export default function PlannerPage() {
                     <Badge variant="outline">
                       {plan.degreeStructure.primaryMajor}
                     </Badge>
-                    {plan.degreeStructure.secondMajor && (
-                      <Badge variant="outline">
-                        2nd Major: {plan.degreeStructure.secondMajor}
-                      </Badge>
-                    )}
                     {plan.degreeStructure.minors.map((minor) => (
                       <Badge key={minor} variant="outline">
                         Minor: {minor}
@@ -215,129 +229,43 @@ export default function PlannerPage() {
                     ))}
                     {plan.degreeStructure.specialisations.map((spec) => (
                       <Badge key={spec} variant="outline">
-                        {spec}
+                        Spec: {spec}
                       </Badge>
                     ))}
                   </div>
                 )}
-                <p className="text-sm text-muted-foreground mt-2">
-                  Current: Y{plan.currentYear}S{plan.currentSemester}
-                </p>
               </div>
-              <div className="flex gap-2">
-                <Badge variant="outline" className="text-sm">
-                  {plan.status}
-                </Badge>
-                {plan.workloadScore && (
-                  <Badge variant="secondary" className="text-sm">
-                    Workload: {plan.workloadScore.toFixed(1)}/10
-                  </Badge>
-                )}
-                {plan.riskScore && (
-                  <Badge variant="secondary" className="text-sm">
-                    Risk: {plan.riskScore.toFixed(1)}/10
-                  </Badge>
-                )}
-              </div>
+              <Button
+                onClick={handleExportPDF}
+                className="shrink-0 w-full sm:w-auto"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Export PDF
+              </Button>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Sidebar - Controls */}
             <div className="lg:col-span-1 space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Settings2 className="h-5 w-5" />
-                    Constraints
-                  </CardTitle>
-                  <CardDescription>
-                    Adjust your plan preferences
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* MC Range */}
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      Max MCs per semester: {maxMc}
-                    </label>
-                    <Slider
-                      value={[maxMc]}
-                      onValueChange={(values) => setMaxMc(values[0])}
-                      min={12}
-                      max={32}
-                      step={2}
-                      className="mb-4"
-                    />
-                    <label className="text-sm font-medium mb-2 block">
-                      Min MCs per semester: {minMc}
-                    </label>
-                    <Slider
-                      value={[minMc]}
-                      onValueChange={(values) => setMinMc(values[0])}
-                      min={8}
-                      max={20}
-                      step={2}
-                    />
-                  </div>
-
-                  {/* Pacing */}
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      Difficulty Preference
-                    </label>
-                    <div className="flex flex-col gap-2">
-                      {(["easy", "medium", "hard"] as const).map((p) => (
-                        <Button
-                          key={p}
-                          variant={pacing === p ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setPacing(p)}
-                          className="justify-start"
-                        >
-                          {p === "easy" && "😌 Easy"}
-                          {p === "medium" && "⚖️ Medium"}
-                          {p === "hard" && "💪 Hard"}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      onClick={handleUpdateConstraints}
-                      disabled={updatePlan.isPending}
-                      className="w-full"
-                    >
-                      {updatePlan.isPending ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Settings2 className="mr-2 h-4 w-4" />
-                      )}
-                      Update Settings
-                    </Button>
-                    <Button
-                      onClick={handleRegenerate}
-                      disabled={generatePlan.isPending}
-                      variant="secondary"
-                      className="w-full"
-                    >
-                      {generatePlan.isPending ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Zap className="mr-2 h-4 w-4" />
-                      )}
-                      Regenerate Plan
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              <PlanSettings
+                maxMc={maxMc}
+                minMc={minMc}
+                pacing={pacing}
+                onMaxMcChange={setMaxMc}
+                onMinMcChange={setMinMc}
+                onPacingChange={setPacing}
+                onUpdateSettings={handleUpdateConstraints}
+                onRegenerate={handleRegenerate}
+                isUpdating={updatePlan.isPending}
+                isRegenerating={generatePlan.isPending}
+              />
 
               {/* Warnings */}
               {plan.warnings.length > 0 && (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-sm">Warnings</CardTitle>
+                    <h3 className="text-sm font-semibold">Warnings</h3>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
@@ -357,68 +285,13 @@ export default function PlannerPage() {
 
             {/* Main Content - Timeline */}
             <div className="lg:col-span-3">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Semester Plan</CardTitle>
-                  <CardDescription>
-                    Your module timeline across semesters
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-[600px] pr-4">
-                    <div className="space-y-6">
-                      {semesters.map((semester) => {
-                        const modules = plan.semesterPlan[semester] || [];
-                        const pinnedModules =
-                          plan.pinnedModules[semester] || [];
-
-                        return (
-                          <div key={semester} className="border rounded-lg p-4">
-                            <div className="flex justify-between items-center mb-4">
-                              <h3 className="text-lg font-semibold">
-                                {semester}
-                              </h3>
-                              <Badge variant="outline">
-                                {modules.length} modules
-                              </Badge>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                              {modules.map((moduleCode) => {
-                                const isPinned =
-                                  pinnedModules.includes(moduleCode);
-                                return (
-                                  <div
-                                    key={moduleCode}
-                                    className={`p-3 rounded-md border ${
-                                      isPinned
-                                        ? "bg-primary/5 border-primary"
-                                        : "bg-muted/50"
-                                    }`}
-                                  >
-                                    <div className="flex justify-between items-start">
-                                      <span className="font-medium">
-                                        {moduleCode}
-                                      </span>
-                                      {isPinned && (
-                                        <Badge
-                                          variant="secondary"
-                                          className="text-xs"
-                                        >
-                                          Pinned
-                                        </Badge>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
+              <SemesterTimeline
+                ref={planContentRef}
+                semesterPlan={plan.semesterPlan}
+                pinnedModules={plan.pinnedModules}
+                sensors={sensors}
+                onDragEnd={handleDragEnd}
+              />
             </div>
           </div>
         </div>

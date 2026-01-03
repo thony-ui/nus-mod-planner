@@ -1,7 +1,7 @@
 "use client";
 
-import { ModuleSearch } from "@/components/module-search";
-import { ProtectedRoute } from "@/components/protected-route";
+import { ProtectedRoute } from "@/components/layout/protected-route";
+import { ModuleSearch } from "@/components/module/module-search";
 
 /**
  * Modules Browse Page

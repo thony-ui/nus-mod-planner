@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ProtectedRoute } from "@/components/protected-route";
+import { ProtectedRoute } from "@/components/layout/protected-route";
 
 export default function Home() {
   return (

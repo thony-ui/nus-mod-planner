@@ -40,7 +40,7 @@ export interface Plan {
   currentSemester: number;
   maxMcPerSemester: number;
   minMcPerSemester: number;
-  pacingPreference: "safe" | "balanced" | "fast" | "easy" | "medium" | "hard";
+  pacingPreference: "easy" | "medium" | "hard";
 
   // Plan data
   semesterPlan: SemesterPlan;

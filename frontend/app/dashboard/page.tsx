@@ -100,8 +100,7 @@ export default function DashboardPage() {
         (plan) =>
           plan.name.toLowerCase().includes(query) ||
           plan.programme.toLowerCase().includes(query) ||
-          plan.degreeStructure?.primaryMajor?.toLowerCase().includes(query) ||
-          plan.status?.toLowerCase().includes(query)
+          plan.degreeStructure?.primaryMajor?.toLowerCase().includes(query)
       );
     }
 
@@ -144,7 +143,7 @@ export default function DashboardPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Search plans by name, programme, or status..."
+            placeholder="Search plans by name or programme"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -322,12 +321,6 @@ function PlanCard({
             <span className="font-medium">
               {plan.completedModules?.length || 0} modules
             </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Status:</span>
-            <Badge variant={plan.status === "active" ? "default" : "secondary"}>
-              {plan.status || "draft"}
-            </Badge>
           </div>
         </div>
       </CardContent>

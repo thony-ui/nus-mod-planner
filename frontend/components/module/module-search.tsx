@@ -5,15 +5,8 @@ import { useModuleSearch } from "@/hooks/use-modules";
 import { Module, ModuleSearchParams } from "@/types/module";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ModuleDetailsDialog } from "@/components/module-details-dialog";
+import { ModuleDetailsDialog } from "./module-details-dialog";
+import { ModuleCard } from "./module-card";
 
 /**
  * Module Search Component
@@ -139,62 +132,5 @@ export function ModuleSearch({
         onOpenChange={setDialogOpen}
       />
     </div>
-  );
-}
-
-/**
- * Individual Module Card Component
- * Follows Single Responsibility Principle
- */
-function ModuleCard({
-  module,
-  onSelect,
-}: {
-  module: Module;
-  onSelect?: (module: Module) => void;
-}) {
-  return (
-    <Card
-      onClick={() => onSelect?.(module)}
-      className={
-        onSelect ? "cursor-pointer hover:bg-accent transition-colors" : ""
-      }
-    >
-      <CardHeader>
-        <div className="flex justify-between items-start">
-          <div>
-            <CardTitle className="text-lg">{module.code}</CardTitle>
-            <CardDescription>{module.title}</CardDescription>
-          </div>
-          <Badge variant="secondary">
-            {module.mcs} MC{module.mcs !== 1 ? "s" : ""}
-          </Badge>
-        </div>
-      </CardHeader>
-      {(module.description ||
-        module.faculty ||
-        module.semestersOffered?.length > 0) && (
-        <CardContent>
-          {module.description && (
-            <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-              {module.description}
-            </p>
-          )}
-          <div className="flex flex-wrap gap-2 text-xs">
-            {module.faculty && (
-              <Badge variant="outline">{module.faculty}</Badge>
-            )}
-            {module.semestersOffered && module.semestersOffered.length > 0 && (
-              <Badge
-                variant="outline"
-                className="bg-green-50 dark:bg-green-950"
-              >
-                Sem {module.semestersOffered.join(", ")}
-              </Badge>
-            )}
-          </div>
-        </CardContent>
-      )}
-    </Card>
   );
 }
