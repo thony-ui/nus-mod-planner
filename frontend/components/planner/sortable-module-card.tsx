@@ -9,19 +9,28 @@ interface SortableModuleCardProps {
   moduleCode: string;
   isPinned: boolean;
   semester: string;
+  isDragging?: boolean;
 }
 
 export function SortableModuleCard({
   moduleCode,
   isPinned,
   semester,
+  isDragging,
 }: SortableModuleCardProps) {
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id: `${semester}-${moduleCode}` });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging: isSortableDragging,
+  } = useSortable({ id: `${semester}-${moduleCode}` });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    opacity: isDragging || isSortableDragging ? 0.3 : 1,
   };
 
   const nusmods_url = `https://nusmods.com/courses/${moduleCode}`;

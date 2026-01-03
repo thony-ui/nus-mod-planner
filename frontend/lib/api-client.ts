@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import axios, { AxiosInstance } from "axios";
 import {
   Module,
@@ -38,7 +39,7 @@ class ApiClient {
       headers: {
         "Content-Type": "application/json",
       },
-      timeout: 30000,
+      timeout: 300000, // 5 minutes for planner operations
     });
 
     // Add request interceptor for auth token
@@ -100,6 +101,40 @@ class ApiClient {
       message: string;
       status: string;
     }>("/v1/modules/sync");
+    return response.data;
+  }
+
+  /**
+   * Semantic search modules using RAG
+   */
+  async searchModulesSemantic(
+    query: string,
+    limit: number = 20
+  ): Promise<{
+    modules: Module[];
+    total: number;
+    limit: number;
+    offset: number;
+  }> {
+    const response = await this.client.get<{
+      modules: Module[];
+      total: number;
+      limit: number;
+      offset: number;
+    }>(`/v1/modules/search/semantic`, {
+      params: { q: query, limit },
+    });
+    return response.data;
+  }
+
+  /**
+   * Sync module embeddings (admin)
+   */
+  async syncEmbeddings(): Promise<{ message: string; status: string }> {
+    const response = await this.client.post<{
+      message: string;
+      status: string;
+    }>("/v1/modules/sync-embeddings");
     return response.data;
   }
 

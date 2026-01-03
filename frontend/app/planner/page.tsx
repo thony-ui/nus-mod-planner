@@ -1,32 +1,32 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { useSearchParams } from "next/navigation";
-import {
-  useActivePlan,
-  usePlan,
-  useUpdatePlan,
-  useGeneratePlan,
-} from "@/hooks/use-plans";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { useActivePlan, usePlan, useUpdatePlan } from "@/hooks/use-plans";
+import { useModuleSearch } from "@/hooks/use-modules";
+import { useSemanticSearch } from "@/hooks/use-semantic-search";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { useRouter } from "next/navigation";
-import { Loader2, Plus, Edit2, Check, X, Download } from "lucide-react";
-import { DragEndEvent } from "@dnd-kit/core";
-import { useDragDropSensors, handleModuleDragEnd } from "@/hooks/use-drag-drop";
-import { exportPlanToPDF } from "@/lib/pdf-export";
-import { PlanSettings } from "@/components/planner/plan-settings";
-import { SemesterTimeline } from "@/components/planner/semester-timeline";
+import { Loader2, Plus } from "lucide-react";
 import { ProtectedRoute } from "@/components/layout/protected-route";
+import { DndContext, DragEndEvent, DragOverlay } from "@dnd-kit/core";
+import { useDragDropSensors, handleModuleDragEnd } from "@/hooks/use-drag-drop";
+import { PlannerHeader } from "@/components/planner/planner-header";
+import { SemesterCard } from "@/components/planner/semester-card";
+import { AddModuleDialog } from "@/components/planner/add-module-dialog";
+import { AddSemesterDialog } from "@/components/planner/add-semester-dialog";
+import { DeleteConfirmationDialog } from "@/components/planner/delete-confirmation-dialog";
+import {
+  calculateSemesterMC,
+  calculateTotalMC,
+} from "@/components/planner/planner-utils";
+import { SortableModuleCard } from "@/components/planner/sortable-module-card";
 
+// TODO: Need to refractor calling database for module MCs prolly need to store it in plan or something
 export default function PlannerPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const planId = searchParams.get("planId");
 
-  // Fetch specific plan if planId is provided, otherwise fetch active plan
   const { data: activePlan, isLoading: activeLoading } = useActivePlan();
   const { data: specificPlan, isLoading: specificLoading } = usePlan(
     planId || ""
@@ -36,95 +36,189 @@ export default function PlannerPage() {
   const isLoading = planId ? specificLoading : activeLoading;
 
   const updatePlan = useUpdatePlan();
-  const generatePlan = useGeneratePlan();
 
-  const [maxMc, setMaxMc] = useState(24);
-  const [minMc, setMinMc] = useState(18);
-  const [pacing, setPacing] = useState<"easy" | "medium" | "hard">("easy");
-
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [editedName, setEditedName] = useState("");
-
-  const handleUpdateConstraints = async () => {
-    if (!plan) return;
-
-    await updatePlan.mutateAsync({
-      id: plan.id,
-      data: {
-        maxMcPerSemester: maxMc,
-        minMcPerSemester: minMc,
-        pacingPreference: pacing,
-      },
-    });
-  };
-
-  const handleStartEditName = () => {
-    if (plan) {
-      setEditedName(plan.name);
-      setIsEditingName(true);
-    }
-  };
-
-  const handleSaveName = async () => {
-    if (!plan || !editedName.trim()) return;
-
-    await updatePlan.mutateAsync({
-      id: plan.id,
-      data: { name: editedName.trim() },
-    });
-    setIsEditingName(false);
-  };
-
-  const handleCancelEdit = () => {
-    setIsEditingName(false);
-    setEditedName("");
-  };
-
-  const handleRegenerate = async () => {
-    if (!plan) return;
-
-    await generatePlan.mutateAsync({
-      programme: plan.programme,
-      degreeStructure: plan.degreeStructure || {
-        primaryMajor: plan.programme,
-        minors: [],
-        specialisations: [],
-      },
-      completedModules: plan.completedModules,
-      currentYear: plan.currentYear,
-      currentSemester: plan.currentSemester,
-      maxMcPerSemester: maxMc,
-      minMcPerSemester: minMc,
-      pacingPreference: pacing,
-      pinnedModules: plan.pinnedModules,
-    });
-  };
-
-  const planContentRef = useRef<HTMLDivElement>(null);
-
-  const handleExportPDF = async () => {
-    if (!plan) return;
-    await exportPlanToPDF(
-      {
-        name: plan.name,
-        programme: plan.programme,
-        semesterPlan: plan.semesterPlan,
-        minMcPerSemester: plan.minMcPerSemester,
-        maxMcPerSemester: plan.maxMcPerSemester,
-      },
-      `${plan.name}.pdf`
-    );
-  };
+  // UI State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedSemester, setSelectedSemester] = useState<string | null>(null);
+  const [useSemanticMode, setUseSemanticMode] = useState(true);
+  const [moduleToDelete, setModuleToDelete] = useState<{
+    semester: string;
+    moduleCode: string;
+  } | null>(null);
+  const [showAddSemester, setShowAddSemester] = useState(false);
+  const [semesterToDelete, setSemesterToDelete] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   const sensors = useDragDropSensors();
 
-  const handleDragEnd = async (event: DragEndEvent) => {
+  // Search results
+  const { data: semanticResults, isLoading: semanticLoading } =
+    useSemanticSearch(searchQuery);
+  const { data: traditionalResults, isLoading: traditionalLoading } =
+    useModuleSearch({
+      search: searchQuery,
+      limit: 20,
+      offset: 0,
+    });
+
+  const searchResults = useSemanticMode ? semanticResults : traditionalResults;
+  const searchLoading = useSemanticMode ? semanticLoading : traditionalLoading;
+
+  // Get all modules for MC calculations - need to fetch in batches due to backend limit
+  const { data: batch1 } = useModuleSearch({
+    search: "",
+    limit: 1000,
+    offset: 0,
+  });
+  const { data: batch2 } = useModuleSearch({
+    search: "",
+    limit: 1000,
+    offset: 1000,
+  });
+  const { data: batch3 } = useModuleSearch({
+    search: "",
+    limit: 1000,
+    offset: 2000,
+  });
+  const { data: batch4 } = useModuleSearch({
+    search: "",
+    limit: 1000,
+    offset: 3000,
+  });
+  const { data: batch5 } = useModuleSearch({
+    search: "",
+    limit: 1000,
+    offset: 4000,
+  });
+  const { data: batch6 } = useModuleSearch({
+    search: "",
+    limit: 1000,
+    offset: 5000,
+  });
+  const { data: batch7 } = useModuleSearch({
+    search: "",
+    limit: 1000,
+    offset: 6000,
+  });
+  const { data: batch8 } = useModuleSearch({
+    search: "",
+    limit: 1000,
+    offset: 7000,
+  });
+
+  // Combine all batches
+  const allModules = [
+    ...(batch1?.modules || []),
+    ...(batch2?.modules || []),
+    ...(batch3?.modules || []),
+    ...(batch4?.modules || []),
+    ...(batch5?.modules || []),
+    ...(batch6?.modules || []),
+    ...(batch7?.modules || []),
+    ...(batch8?.modules || []),
+  ];
+
+  // Handlers
+  const handleUpdateName = async (name: string) => {
+    if (!plan || !name.trim()) return;
+    await updatePlan.mutateAsync({
+      id: plan.id,
+      data: { name: name.trim() },
+    });
+  };
+
+  const handleAddModule = async (moduleCode: string) => {
+    if (!plan || !selectedSemester) return;
+
+    const currentModules = plan.semesterPlan[selectedSemester] || [];
+
+    if (currentModules.includes(moduleCode)) {
+      alert("Module already added to this semester!");
+      return;
+    }
+
+    const newSemesterPlan = {
+      ...plan.semesterPlan,
+      [selectedSemester]: [...currentModules, moduleCode],
+    };
+
+    await updatePlan.mutateAsync({
+      id: plan.id,
+      data: { semesterPlan: newSemesterPlan },
+    });
+
+    setSearchQuery("");
+    setSelectedSemester(null);
+  };
+
+  const handleRemoveModule = async () => {
+    if (!plan || !moduleToDelete) return;
+
+    const { semester, moduleCode } = moduleToDelete;
+    const currentModules = plan.semesterPlan[semester] || [];
+    const newModules = currentModules.filter(
+      (code: string) => code !== moduleCode
+    );
+
+    const newSemesterPlan = {
+      ...plan.semesterPlan,
+      [semester]: newModules,
+    };
+
+    await updatePlan.mutateAsync({
+      id: plan.id,
+      data: { semesterPlan: newSemesterPlan },
+    });
+
+    setModuleToDelete(null);
+  };
+
+  const handleAddSemester = async (year: string, semester: string) => {
+    if (!plan) return;
+
+    const semesterKey = `Y${year}S${semester}`;
+
+    if (plan.semesterPlan[semesterKey]) {
+      alert("This semester already exists!");
+      return;
+    }
+
+    const newSemesterPlan = {
+      ...plan.semesterPlan,
+      [semesterKey]: [],
+    };
+
+    await updatePlan.mutateAsync({
+      id: plan.id,
+      data: { semesterPlan: newSemesterPlan },
+    });
+
+    setShowAddSemester(false);
+  };
+
+  const handleDeleteSemester = async () => {
+    if (!plan || !semesterToDelete) return;
+
+    const newSemesterPlan = { ...plan.semesterPlan };
+    delete newSemesterPlan[semesterToDelete];
+
+    await updatePlan.mutateAsync({
+      id: plan.id,
+      data: { semesterPlan: newSemesterPlan },
+    });
+
+    setSemesterToDelete(null);
+  };
+
+  const onDragEnd = async (event: DragEndEvent) => {
+    setActiveId(null);
+
     if (!plan) return;
 
     await handleModuleDragEnd({
       event,
       semesterPlan: plan.semesterPlan,
-      onUpdate: async (newSemesterPlan) => {
+      onUpdate: async (newSemesterPlan: Record<string, string[]>) => {
         await updatePlan.mutateAsync({
           id: plan.id,
           data: { semesterPlan: newSemesterPlan },
@@ -165,137 +259,105 @@ export default function PlannerPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-[calc(100vh-64px)] bg-background py-8 px-4">
-        <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="mb-6 md:mb-8">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4">
-              <div className="flex-1 min-w-0">
-                {isEditingName ? (
-                  <div className="flex items-center gap-2 mb-2">
-                    <Input
-                      value={editedName}
-                      onChange={(e) => setEditedName(e.target.value)}
-                      className="text-2xl md:text-4xl font-bold h-auto py-2 max-w-2xl"
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleSaveName();
-                        if (e.key === "Escape") handleCancelEdit();
-                      }}
-                      autoFocus
-                    />
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={handleSaveName}
-                      disabled={!editedName.trim()}
-                    >
-                      <Check className="h-5 w-5" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={handleCancelEdit}
-                    >
-                      <X className="h-5 w-5" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 mb-2">
-                    <h1 className="text-2xl md:text-4xl font-bold truncate">
-                      {plan.name}
-                    </h1>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={handleStartEditName}
-                      className="shrink-0"
-                    >
-                      <Edit2 className="h-5 w-5" />
-                    </Button>
-                  </div>
-                )}
-                <p className="text-base md:text-lg text-muted-foreground">
-                  {plan.programme}
-                </p>
-                {plan.degreeStructure && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    <Badge variant="outline">
-                      {plan.degreeStructure.primaryMajor}
-                    </Badge>
-                    {plan.degreeStructure.minors.map((minor) => (
-                      <Badge key={minor} variant="outline">
-                        Minor: {minor}
-                      </Badge>
-                    ))}
-                    {plan.degreeStructure.specialisations.map((spec) => (
-                      <Badge key={spec} variant="outline">
-                        Spec: {spec}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
+      <DndContext
+        sensors={sensors}
+        onDragStart={({ active }) => setActiveId(active.id.toString())}
+        onDragEnd={onDragEnd}
+      >
+        <div className="min-h-[calc(100vh-64px)] bg-background py-8 px-4">
+          <div className="max-w-7xl mx-auto">
+            <PlannerHeader
+              plan={plan}
+              onUpdateName={handleUpdateName}
+              calculateTotalMC={() => calculateTotalMC(plan, allModules)}
+            />
+
+            <div className="mb-4">
               <Button
-                onClick={handleExportPDF}
-                className="shrink-0 w-full sm:w-auto"
+                onClick={() => setShowAddSemester(true)}
+                variant="outline"
               >
-                <Download className="mr-2 h-4 w-4" />
-                Export PDF
+                <Plus className="h-4 w-4 mr-2" />
+                Add Semester
               </Button>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Sidebar - Controls */}
-            <div className="lg:col-span-1 space-y-4">
-              <PlanSettings
-                maxMc={maxMc}
-                minMc={minMc}
-                pacing={pacing}
-                onMaxMcChange={setMaxMc}
-                onMinMcChange={setMinMc}
-                onPacingChange={setPacing}
-                onUpdateSettings={handleUpdateConstraints}
-                onRegenerate={handleRegenerate}
-                isUpdating={updatePlan.isPending}
-                isRegenerating={generatePlan.isPending}
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Object.keys(plan.semesterPlan)
+                .sort()
+                .map((semester) => {
+                  const modules = plan.semesterPlan[semester] || [];
+                  const semesterMC = calculateSemesterMC(modules, allModules);
 
-              {/* Warnings */}
-              {plan.warnings.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <h3 className="text-sm font-semibold">Warnings</h3>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {plan.warnings.map((warning, idx) => (
-                        <div
-                          key={idx}
-                          className="text-xs p-2 rounded bg-destructive/10 text-destructive"
-                        >
-                          {warning.message}
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                  return (
+                    <SemesterCard
+                      key={semester}
+                      semester={semester}
+                      modules={modules}
+                      semesterMC={semesterMC}
+                      activeId={activeId}
+                      onAddModule={() => {
+                        setSelectedSemester(semester);
+                        setSearchQuery("");
+                      }}
+                      onDeleteModule={(moduleCode: string) =>
+                        setModuleToDelete({ semester, moduleCode })
+                      }
+                      onDeleteSemester={() => setSemesterToDelete(semester)}
+                    />
+                  );
+                })}
             </div>
 
-            {/* Main Content - Timeline */}
-            <div className="lg:col-span-3">
-              <SemesterTimeline
-                ref={planContentRef}
-                semesterPlan={plan.semesterPlan}
-                pinnedModules={plan.pinnedModules}
-                sensors={sensors}
-                onDragEnd={handleDragEnd}
-              />
-            </div>
+            <AddModuleDialog
+              open={!!selectedSemester}
+              semester={selectedSemester}
+              onClose={() => {
+                setSelectedSemester(null);
+                setSearchQuery("");
+              }}
+              onAddModule={handleAddModule}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              useSemanticMode={useSemanticMode}
+              setUseSemanticMode={setUseSemanticMode}
+              searchResults={searchResults}
+              searchLoading={searchLoading}
+            />
+
+            <AddSemesterDialog
+              open={showAddSemester}
+              onClose={() => setShowAddSemester(false)}
+              onAdd={handleAddSemester}
+            />
+
+            <DeleteConfirmationDialog
+              open={!!semesterToDelete}
+              title="Delete Semester"
+              message={`Are you sure you want to delete ${semesterToDelete}? This will remove all modules in this semester.`}
+              onClose={() => setSemesterToDelete(null)}
+              onConfirm={handleDeleteSemester}
+            />
+
+            <DeleteConfirmationDialog
+              open={!!moduleToDelete}
+              title="Confirm Deletion"
+              message={`Are you sure you want to remove ${moduleToDelete?.moduleCode} from ${moduleToDelete?.semester}?`}
+              onClose={() => setModuleToDelete(null)}
+              onConfirm={handleRemoveModule}
+            />
           </div>
         </div>
-      </div>
+        <DragOverlay>
+          {activeId ? (
+            <SortableModuleCard
+              moduleCode={activeId.split("-").slice(1).join("-")}
+              isPinned={false}
+              semester=""
+            />
+          ) : null}
+        </DragOverlay>
+      </DndContext>
     </ProtectedRoute>
   );
 }

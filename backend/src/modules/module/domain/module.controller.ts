@@ -154,4 +154,70 @@ export class ModuleController {
       next(error);
     }
   };
+
+  /**
+   * GET /modules/search/semantic - Semantic search with RAG
+   */
+  semanticSearchModules = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const query = req.query.q as string;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+
+      if (!query || query.trim().length === 0) {
+        res.status(400).json({
+          error: "Query parameter 'q' is required",
+        });
+        return;
+      }
+
+      logger.info(
+        `ModuleController: semanticSearchModules called with query: "${query}"`
+      );
+
+      const result = await this.moduleService.semanticSearch(query, limit);
+      res.status(200).json(result);
+    } catch (error) {
+      logger.error(
+        `ModuleController: Error in semanticSearchModules: ${error}`
+      );
+      next(error);
+    }
+  };
+
+  /**
+   * POST /modules/sync-embeddings - Generate embeddings for all modules (admin only)
+   */
+  syncEmbeddings = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      logger.info("ModuleController: syncEmbeddings triggered");
+
+      // Start sync in background (don't wait for completion)
+      this.moduleService
+        .syncModuleEmbeddings()
+        .then((result) => {
+          logger.info(
+            `ModuleController: Embedding sync completed. Processed: ${result.processed}, Failed: ${result.failed}`
+          );
+        })
+        .catch((error) => {
+          logger.error(`ModuleController: Embedding sync failed: ${error}`);
+        });
+
+      res.status(202).json({
+        message: "Embedding sync started in background",
+        status: "processing",
+      });
+    } catch (error) {
+      logger.error(`ModuleController: Error in syncEmbeddings: ${error}`);
+      next(error);
+    }
+  };
 }

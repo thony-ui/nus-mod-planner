@@ -16,7 +16,7 @@ import CompletedModules from "@/components/onboarding/completed-modules";
 
 /**
  * Onboarding Page
- * Allows users to select their programme and completed modules
+ * Allows users to set up their degree plan
  */
 export default function OnboardingPage() {
   const [selectedProgramme, setSelectedProgramme] = useState<string>("");
@@ -59,11 +59,18 @@ export default function OnboardingPage() {
       specialisations,
     };
 
+    // Create moduleMCs mapping from completed modules
+    const moduleMCs: Record<string, number> = {};
+    completedModules.forEach((module) => {
+      moduleMCs[module.code] = module.mcs;
+    });
+
     try {
       await generatePlan.mutateAsync({
         programme: selectedProgramme,
         degreeStructure,
         completedModules: completedModules.map((m) => m.code),
+        moduleMCs, // Pass the MC mapping
         currentYear,
         currentSemester,
         maxMcPerSemester: 24,
@@ -71,7 +78,7 @@ export default function OnboardingPage() {
         pacingPreference: "medium",
       });
 
-      // Navigate to planner after successful generation
+      // Navigate to planner
       router.push("/planner");
     } catch (error) {
       console.error("Failed to generate plan:", error);
@@ -151,8 +158,7 @@ export default function OnboardingPage() {
               )}
             </Button>
             <p className="text-sm text-muted-foreground mt-2">
-              We&apos;ll generate your plan from Y{currentYear}S
-              {currentSemester} to graduation
+              We&apos;ll create an initial plan that you can customize
             </p>
           </div>
         </div>

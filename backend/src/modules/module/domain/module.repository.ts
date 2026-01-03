@@ -135,6 +135,34 @@ export class ModuleRepository {
   }
 
   /**
+   * Get multiple modules by their codes
+   */
+  async getModulesByCodes(codes: string[]): Promise<Module[]> {
+    try {
+      if (codes.length === 0) {
+        return [];
+      }
+
+      const { data, error } = await supabase
+        .from(this.TABLE_NAME)
+        .select("*")
+        .in("code", codes);
+
+      if (error) {
+        logger.error(
+          `ModuleRepository: Error fetching modules by codes: ${error.message}`
+        );
+        throw new Error(`Failed to fetch modules: ${error.message}`);
+      }
+
+      return data ? data.map((d) => this.mapDbToModule(d)) : [];
+    } catch (error) {
+      logger.error(`ModuleRepository: Error in getModulesByCodes: ${error}`);
+      throw error;
+    }
+  }
+
+  /**
    * Search modules with filters
    */
   async searchModules(params: ModuleSearchParams): Promise<ModuleSearchResult> {
@@ -201,6 +229,82 @@ export class ModuleRepository {
       };
     } catch (error) {
       logger.error(`ModuleRepository: Error in searchModules: ${error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all modules from the database in batches
+   * Used by planner to have access to entire module catalog
+   * Fetches in batches to avoid database overload
+   * Only includes undergraduate modules (1000-4000 level)
+   */
+  async getAllModules(): Promise<Module[]> {
+    try {
+      logger.info(
+        "ModuleRepository: Fetching all undergraduate modules in batches"
+      );
+
+      const batchSize = 1000; // Fetch 1000 modules per batch
+      let offset = 0;
+      let allModules: Module[] = [];
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from(this.TABLE_NAME)
+          .select("*")
+          .order("code", { ascending: true })
+          .range(offset, offset + batchSize - 1);
+
+        if (error) {
+          logger.error(
+            `ModuleRepository: Error fetching modules batch at offset ${offset}: ${error.message}`
+          );
+          throw new Error(`Failed to fetch modules: ${error.message}`);
+        }
+
+        if (data && data.length > 0) {
+          // Filter for undergraduate modules (1000-4000 level) in-memory
+          const undergradModules = data.filter((d) => {
+            const code = d.code;
+            // Extract the numeric part (e.g., "CS2103" -> "2103")
+            const match = code.match(/(\d)/);
+            if (match) {
+              const firstDigit = parseInt(match[1], 10);
+              return firstDigit >= 1 && firstDigit <= 4;
+            }
+            return false;
+          });
+
+          if (undergradModules.length > 0) {
+            const batchModules = undergradModules.map((d) =>
+              this.mapDbToModule(d)
+            );
+            allModules = allModules.concat(batchModules);
+            logger.info(
+              `ModuleRepository: Fetched batch of ${undergradModules.length} undergraduate modules from ${data.length} total (overall: ${allModules.length})`
+            );
+          }
+
+          // Check if we got fewer modules than batch size (last batch)
+          if (data.length < batchSize) {
+            hasMore = false;
+          } else {
+            offset += batchSize;
+          }
+        } else {
+          hasMore = false;
+        }
+      }
+
+      logger.info(
+        `ModuleRepository: Retrieved total of ${allModules.length} undergraduate modules`
+      );
+
+      return allModules.slice(200);
+    } catch (error) {
+      logger.error(`ModuleRepository: Error in getAllModules: ${error}`);
       throw error;
     }
   }

@@ -20,10 +20,12 @@ export function defineModuleRoutes(expressApp: Application) {
   // Public routes (no authentication required for MVP)
   moduleRouter.get("/", moduleController.getModules);
   moduleRouter.get("/stats", moduleController.getModuleStats);
+  moduleRouter.get("/search/semantic", moduleController.semanticSearchModules);
   moduleRouter.get("/:code", moduleController.getModuleByCode);
 
   // Admin routes (add authentication middleware later)
   moduleRouter.post("/sync", moduleController.syncAllModules);
+  moduleRouter.post("/sync-embeddings", moduleController.syncEmbeddings);
   moduleRouter.post("/:code/sync", moduleController.syncModule);
 
   // Mount the router

@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { useModuleSearch } from "@/hooks/use-modules";
+import { useSemanticSearch } from "@/hooks/use-semantic-search";
 import { Module, ModuleSearchParams } from "@/types/module";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ModuleDetailsDialog } from "./module-details-dialog";
 import { ModuleCard } from "./module-card";
+import { Badge } from "@/components/ui/badge";
 
 /**
  * Module Search Component
@@ -24,8 +26,19 @@ export function ModuleSearch({
   });
   const [selectedModule, setSelectedModule] = useState<Module | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [useSemanticMode, setUseSemanticMode] = useState(true);
 
-  const { data, isLoading, error } = useModuleSearch(searchParams);
+  // Use semantic search or traditional search based on mode
+  const traditionalSearch = useModuleSearch(searchParams);
+  const semanticSearchResult = useSemanticSearch(
+    searchParams.search || "",
+    searchParams.limit
+  );
+
+  // Select the appropriate data source
+  const { data, isLoading, error } = useSemanticMode
+    ? semanticSearchResult
+    : traditionalSearch;
 
   const handleModuleClick = (module: Module) => {
     setSelectedModule(module);
@@ -62,26 +75,58 @@ export function ModuleSearch({
       <div className="mb-6">
         <Input
           type="text"
-          placeholder="Search for modules..."
+          placeholder={
+            useSemanticMode
+              ? "Search modules with AI (e.g., 'machine learning with practical applications')..."
+              : "Search for modules..."
+          }
           value={searchParams.search || ""}
           onChange={(e) => handleSearchChange(e.target.value)}
           className="w-full"
         />
       </div>
 
-      {/* Filters */}
-      <div className="mb-6 flex gap-2 flex-wrap items-center">
-        <span className="text-sm text-muted-foreground">Semester:</span>
-        {["1", "2"].map((sem) => (
+      {/* Search Mode Toggle and Filters */}
+      <div className="mb-6 flex gap-4 flex-wrap items-center">
+        {/* Search Mode Toggle */}
+        <div className="flex gap-2 items-center">
           <Button
-            key={sem}
-            onClick={() => handleSemesterFilter(sem)}
-            variant={searchParams.semester === sem ? "default" : "outline"}
+            onClick={() => setUseSemanticMode(true)}
+            variant={"default"}
             size="sm"
           >
-            Sem {sem}
+            {"🤖 Semantic AI"}
           </Button>
-        ))}
+          <Button
+            onClick={() => setUseSemanticMode(false)}
+            variant={"outline"}
+            size="sm"
+          >
+            {"🔍 Traditional"}
+          </Button>
+          {useSemanticMode && (
+            <Badge variant="secondary" className="text-xs">
+              Powered by RAG
+            </Badge>
+          )}
+        </div>
+
+        {/* Semester Filter (only for traditional search) */}
+        {!useSemanticMode && (
+          <>
+            <span className="text-sm text-muted-foreground">Semester:</span>
+            {["1", "2"].map((sem) => (
+              <Button
+                key={sem}
+                onClick={() => handleSemesterFilter(sem)}
+                variant={searchParams.semester === sem ? "default" : "outline"}
+                size="sm"
+              >
+                Sem {sem}
+              </Button>
+            ))}
+          </>
+        )}
       </div>
 
       {/* Loading State */}

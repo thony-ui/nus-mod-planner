@@ -6,6 +6,10 @@ export interface SemesterPlan {
   [semester: string]: string[]; // e.g., { "Y1S1": ["CS1010", "CS1231"], "Y1S2": [...] }
 }
 
+export interface ModuleMCs {
+  [moduleCode: string]: number; // e.g., { "CS1010": 4, "CS1231": 4 }
+}
+
 export interface PinnedModules {
   [semester: string]: string[]; // User-locked module positions
 }
@@ -44,6 +48,7 @@ export interface Plan {
 
   // Plan data
   semesterPlan: SemesterPlan;
+  moduleMCs: ModuleMCs; // Store MC values for each module
   pinnedModules: PinnedModules;
   completedModules: string[];
 
@@ -77,8 +82,9 @@ export interface UpdatePlanDto {
   currentSemester?: number;
   maxMcPerSemester?: number;
   minMcPerSemester?: number;
-  pacingPreference?: "safe" | "balanced" | "fast" | "easy" | "medium" | "hard";
+  pacingPreference?: "easy" | "medium" | "hard";
   semesterPlan?: SemesterPlan;
+  moduleMCs?: ModuleMCs; // MC values for modules
   pinnedModules?: PinnedModules;
   completedModules?: string[];
 }
@@ -87,6 +93,7 @@ export interface GeneratePlanDto {
   programme: string;
   degreeStructure: DegreeStructure;
   completedModules: string[];
+  moduleMCs?: ModuleMCs; // MC values for modules
   currentYear: number;
   currentSemester: number;
   maxMcPerSemester?: number;
