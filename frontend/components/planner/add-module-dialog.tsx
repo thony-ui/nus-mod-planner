@@ -41,7 +41,7 @@ export function AddModuleDialog({
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
-        <DialogHeader className="flex-shrink-0">
+        <DialogHeader className="shrink-0">
           <DialogTitle>Add Module to {semester}</DialogTitle>
 
           {/* Search Mode Toggle */}

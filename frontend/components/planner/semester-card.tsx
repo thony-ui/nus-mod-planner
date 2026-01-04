@@ -66,7 +66,7 @@ export function SemesterCard({
       </CardHeader>
       <DroppableSemesterCard semester={semester}>
         <CardContent className="flex-1 flex flex-col overflow-hidden">
-          <ScrollArea className="flex-1 max-h-[300px] mb-4 overflow-y-auto">
+          <ScrollArea className="flex-1 max-h-75 mb-4 overflow-y-auto">
             <SortableContext
               items={(modules || []).map((code) => `${semester}-${code}`)}
               strategy={verticalListSortingStrategy}
@@ -88,7 +88,7 @@ export function SemesterCard({
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                        className="absolute top-3 right-1 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
                         onClick={() => onDeleteModule(moduleCode)}
                       >
                         <X className="h-3 w-3" />

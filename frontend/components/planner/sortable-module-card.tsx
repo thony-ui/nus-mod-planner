@@ -47,7 +47,7 @@ export function SortableModuleCard({
       <div
         {...attributes}
         {...listeners}
-        className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground shrink-0 pt-0.5"
+        className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground shrink-0 pt-1"
       >
         <GripVertical className="h-4 w-4" />
       </div>
