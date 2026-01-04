@@ -32,11 +32,13 @@ A multi-service platform that automatically plans all remaining semesters for NU
 The system consists of three main services:
 
 1. **Frontend** (Next.js)
+
    - Planner UI, onboarding flow, timeline visualization
    - Risk dashboard and module exploration
    - Calls Backend API exclusively
 
 2. **Backend API** (Node.js/TypeScript)
+
    - Authentication and user profiles
    - Plan storage and module caching
    - Orchestrates AI service calls
@@ -58,6 +60,7 @@ For detailed architecture information, see [docs/architecture.md](docs/architect
 ## 🛠 Tech Stack
 
 ### Frontend
+
 - **Framework**: Next.js 16 (React 19)
 - **Styling**: Tailwind CSS
 - **UI Components**: Radix UI
@@ -67,6 +70,7 @@ For detailed architecture information, see [docs/architecture.md](docs/architect
 - **PDF Export**: jsPDF, html2canvas
 
 ### Backend
+
 - **Runtime**: Node.js with TypeScript
 - **Framework**: Express.js
 - **Database**: PostgreSQL with Supabase
@@ -76,9 +80,8 @@ For detailed architecture information, see [docs/architecture.md](docs/architect
 - **Testing**: Jest, Supertest
 - **Logging**: Winston
 
-### AI Service
-- **Framework**: Python/FastAPI
-- **Optimization**: OR-Tools CP-SAT
+### Embedding Service
+
 - **Embeddings**: OpenAI API
 - **Vector Operations**: pgvector
 
@@ -88,19 +91,20 @@ For detailed architecture information, see [docs/architecture.md](docs/architect
 
 - Node.js 20+ and npm/yarn
 - PostgreSQL 14+
-- Python 3.9+ (for AI service)
 - Docker (optional, for containerized deployment)
 - Supabase account
 
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/yourusername/nus-mod-planner.git
    cd nus-mod-planner
    ```
 
 2. **Install Backend dependencies**
+
    ```bash
    cd backend
    npm install
@@ -115,6 +119,7 @@ For detailed architecture information, see [docs/architecture.md](docs/architect
 ### Environment Variables
 
 #### Backend (.env)
+
 ```env
 # Database
 DATABASE_URL=postgresql://user:password@localhost:5432/nusmods
@@ -134,6 +139,7 @@ NODE_ENV=development
 ```
 
 #### Frontend (.env.local)
+
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3001
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
@@ -145,10 +151,12 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 #### Development Mode
 
 1. **Start the Backend**
+
    ```bash
    cd backend
    npm run dev
    ```
+
    The backend will run on `http://localhost:3001`
 
 2. **Start the Frontend**
@@ -161,6 +169,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 #### Production Build
 
 1. **Build Backend**
+
    ```bash
    cd backend
    npm run build
