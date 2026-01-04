@@ -24,9 +24,9 @@ export function defineModuleRoutes(expressApp: Application) {
   moduleRouter.get("/:code", moduleController.getModuleByCode);
 
   // Admin routes (add authentication middleware later)
-  moduleRouter.post("/sync", moduleController.syncAllModules);
-  moduleRouter.post("/sync-embeddings", moduleController.syncEmbeddings);
-  moduleRouter.post("/:code/sync", moduleController.syncModule);
+  // moduleRouter.post("/sync", moduleController.syncAllModules);
+  // moduleRouter.post("/sync-embeddings", moduleController.syncEmbeddings);
+  // moduleRouter.post("/:code/sync", moduleController.syncModule);
 
   // Mount the router
   expressApp.use("/v1/modules", moduleRouter);
