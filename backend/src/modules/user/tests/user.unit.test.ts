@@ -4,21 +4,6 @@ import { UserRepository } from "../domain/user.repository";
 import { UserService } from "../domain/user.service";
 import { IUser } from "../domain/user.interface";
 
-jest.mock("../../../logger", () => ({
-  info: jest.fn(),
-  error: jest.fn(),
-  warn: jest.fn(),
-  debug: jest.fn(),
-}));
-
-beforeAll(() => {
-  jest.spyOn(console, "log").mockImplementation(() => {});
-});
-
-afterAll(() => {
-  jest.restoreAllMocks();
-});
-
 describe("IUser Service", () => {
   let userService: UserService;
   let userRepository: UserRepository;
