@@ -1,0 +1,20 @@
+{
+  "AWSEBDockerrunVersion": 2,
+  "containerDefinitions": [
+    {
+      "name": "mod-planner-backend",
+      "image": "820976530674.dkr.ecr.ap-southeast-1.amazonaws.com/mod-planner-backend:latest",
+      "essential": true,
+      "memoryReservation": 256,
+      "portMappings": [{ "containerPort": 8000, "hostPort": 8000 }],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/aws/elasticbeanstalk/mod-planner-backend",
+          "awslogs-region": "ap-southeast-1",
+          "awslogs-stream-prefix": "mod-planner-backend"
+        }
+      }
+    }
+  ]
+}
