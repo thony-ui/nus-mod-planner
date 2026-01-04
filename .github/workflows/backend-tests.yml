@@ -39,3 +39,5 @@ jobs:
               run: npm run test:unit
               env:
                   CI: true
+                  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+                  SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
