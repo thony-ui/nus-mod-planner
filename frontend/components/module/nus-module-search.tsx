@@ -101,11 +101,6 @@ export function NUSModuleSearch({ onModuleSelect }: NUSModuleSearchProps) {
             🔍 Traditional
           </Button>
         </div>
-        {useSemanticMode && (
-          <Badge variant="secondary" className="text-xs mb-6">
-            Powered by RAG
-          </Badge>
-        )}
 
         {/* Semester Filter (only for traditional search) */}
         {!useSemanticMode && (
@@ -124,6 +119,11 @@ export function NUSModuleSearch({ onModuleSelect }: NUSModuleSearchProps) {
           </>
         )}
       </div>
+      {useSemanticMode && (
+        <Badge variant="secondary" className="text-xs mb-6">
+          Powered by RAG
+        </Badge>
+      )}
 
       {/* Loading State */}
       {isLoading && (
