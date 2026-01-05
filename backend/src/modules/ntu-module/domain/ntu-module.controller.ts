@@ -127,15 +127,26 @@ export class NTUModuleController {
    */
   getAllModules = async (req: Request, res: Response) => {
     try {
-      const { search, dept, limit = 20, offset = 0 } = req.query;
+      const {
+        search,
+        dept,
+        gradeType,
+        minAus,
+        maxAus,
+        limit = 20,
+        offset = 0,
+      } = req.query;
 
       logger.info(
-        `NTUModuleController: Search modules request - search: "${search}", dept: "${dept}", limit: ${limit}, offset: ${offset}`
+        `NTUModuleController: Search modules request - search: "${search}", dept: "${dept}", gradeType: "${gradeType}", minAus: ${minAus}, maxAus: ${maxAus}, limit: ${limit}, offset: ${offset}`
       );
 
       const result = await this.service.searchModulesWithPagination({
         search: search as string | undefined,
         dept: dept as string | undefined,
+        gradeType: gradeType as string | undefined,
+        minAus: minAus ? Number(minAus) : undefined,
+        maxAus: maxAus ? Number(maxAus) : undefined,
         limit: Number(limit),
         offset: Number(offset),
       });

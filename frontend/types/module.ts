@@ -79,6 +79,9 @@ export interface ModuleSearchParams {
 export interface NTUModuleSearchParams {
   search?: string;
   dept?: string;
+  minAus?: number;
+  maxAus?: number;
+  gradeType?: string;
   limit?: number;
   offset?: number;
 }

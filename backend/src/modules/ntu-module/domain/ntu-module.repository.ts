@@ -160,6 +160,9 @@ export class NTUModuleRepository {
   async searchModules(params: {
     search?: string;
     dept?: string;
+    gradeType?: string;
+    minAus?: number;
+    maxAus?: number;
     limit?: number;
     offset?: number;
   }): Promise<{ data: NTUModule[]; count: number }> {
@@ -179,6 +182,19 @@ export class NTUModuleRepository {
       // Apply department filter
       if (params.dept) {
         query = query.eq("dept", params.dept);
+      }
+
+      // Apply grade type filter
+      if (params.gradeType) {
+        query = query.eq("grade_type", params.gradeType);
+      }
+
+      // Apply AU range filters
+      if (params.minAus !== undefined) {
+        query = query.gte("aus", params.minAus);
+      }
+      if (params.maxAus !== undefined) {
+        query = query.lte("aus", params.maxAus);
       }
 
       // Apply pagination

@@ -1,14 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useModuleSearch } from "@/hooks/use-modules";
 import { useSemanticSearch } from "@/hooks/use-semantic-search";
 import { ModuleSearchParams, Module, AnyModule } from "@/types/module";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { ModuleDetailsDialog } from "./module-details-dialog";
 import { ModuleCard } from "./module-card";
-import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 
 interface NUSModuleSearchProps {
   onModuleSelect?: (module: Module) => void;
@@ -20,9 +28,14 @@ export function NUSModuleSearch({ onModuleSelect }: NUSModuleSearchProps) {
     limit: 20,
     offset: 0,
   });
+
   const [selectedModule, setSelectedModule] = useState<Module | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+
   const [useSemanticMode, setUseSemanticMode] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
+
+  const [mcRange, setMcRange] = useState<[number, number]>([0, 8]);
 
   // NUS-specific hooks (only one enabled at a time)
   const traditionalSearch = useModuleSearch(searchParams, !useSemanticMode);
@@ -35,6 +48,20 @@ export function NUSModuleSearch({ onModuleSelect }: NUSModuleSearchProps) {
   const { data, isLoading, error } = useSemanticMode
     ? semanticSearch
     : traditionalSearch;
+
+  const hasActiveFilters = useMemo(() => {
+    return Boolean(
+      searchParams.semester ||
+        searchParams.faculty ||
+        searchParams.minMcs != null ||
+        searchParams.maxMcs != null
+    );
+  }, [
+    searchParams.semester,
+    searchParams.faculty,
+    searchParams.minMcs,
+    searchParams.maxMcs,
+  ]);
 
   const handleModuleClick = (module: AnyModule) => {
     setSelectedModule(module as Module);
@@ -50,6 +77,13 @@ export function NUSModuleSearch({ onModuleSelect }: NUSModuleSearchProps) {
     }));
   };
 
+  const handleLoadMore = () => {
+    setSearchParams((prev) => ({
+      ...prev,
+      offset: (prev.offset ?? 0) + (prev.limit ?? 20),
+    }));
+  };
+
   const handleSemesterFilter = (semester: string) => {
     setSearchParams((prev) => ({
       ...prev,
@@ -58,32 +92,45 @@ export function NUSModuleSearch({ onModuleSelect }: NUSModuleSearchProps) {
     }));
   };
 
-  const handleLoadMore = () => {
+  const handleFacultyFilter = (faculty: string) => {
     setSearchParams((prev) => ({
       ...prev,
-      offset: (prev.offset || 0) + (prev.limit || 20),
+      faculty: faculty === "all" ? undefined : faculty,
+      offset: 0,
     }));
   };
 
-  return (
-    <div className="w-full max-w-4xl mx-auto p-4">
-      {/* Search Bar */}
-      <div className="mb-6">
-        <Input
-          type="text"
-          placeholder={
-            useSemanticMode
-              ? "Search NUS modules with AI (e.g., 'machine learning with practical applications')..."
-              : "Search for NUS modules..."
-          }
-          value={searchParams.search || ""}
-          onChange={(e) => handleSearchChange(e.target.value)}
-          className="w-full"
-        />
-      </div>
+  const handleMcRangeChange = (value: number[]) => {
+    const next: [number, number] = [value[0], value[1]];
+    setMcRange(next);
 
-      {/* Search Mode Toggle and Filters */}
-      <div className="mb-6 flex gap-4 flex-wrap items-center">
+    setSearchParams((prev) => ({
+      ...prev,
+      minMcs: next[0] === 0 ? undefined : next[0],
+      maxMcs: next[1] === 8 ? undefined : next[1],
+      offset: 0,
+    }));
+  };
+
+  const handleClearFilters = () => {
+    setSearchParams((prev) => ({
+      search: prev.search,
+      limit: prev.limit,
+      offset: 0,
+    }));
+    setMcRange([0, 8]);
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Search input */}
+      <Input
+        value={searchParams.search ?? ""}
+        onChange={(e) => handleSearchChange(e.target.value)}
+        placeholder="Search NUS modules..."
+      />
+
+      <div className="flex gap-4 flex-wrap items-center">
         {/* Search Mode Toggle */}
         <div className="flex gap-2 items-center">
           <Button
@@ -102,27 +149,96 @@ export function NUSModuleSearch({ onModuleSelect }: NUSModuleSearchProps) {
           </Button>
         </div>
 
-        {/* Semester Filter (only for traditional search) */}
+        {/* Filter Toggle (traditional only) */}
         {!useSemanticMode && (
-          <>
-            <span className="text-sm text-muted-foreground">Semester:</span>
-            {["1", "2"].map((sem) => (
-              <Button
-                key={sem}
-                onClick={() => handleSemesterFilter(sem)}
-                variant={searchParams.semester === sem ? "default" : "outline"}
-                size="sm"
-              >
-                Sem {sem}
-              </Button>
-            ))}
-          </>
+          <Button
+            onClick={() => setShowFilters((v) => !v)}
+            variant="outline"
+            size="sm"
+          >
+            {showFilters ? "Hide Filters" : "Show Filters"}
+          </Button>
+        )}
+
+        {hasActiveFilters && !useSemanticMode && (
+          <Button onClick={handleClearFilters} variant="ghost" size="sm">
+            Clear Filters
+          </Button>
+        )}
+
+        {useSemanticMode && (
+          <Badge variant="secondary" className="text-xs">
+            Powered by RAG
+          </Badge>
         )}
       </div>
-      {useSemanticMode && (
-        <Badge variant="secondary" className="text-xs mb-6">
-          Powered by RAG
-        </Badge>
+
+      {/* Filters Section */}
+      {!useSemanticMode && showFilters && (
+        <div className="border rounded-lg p-4 space-y-4 bg-muted/50">
+          {/* Semester Filter */}
+          <div>
+            <label className="text-sm font-medium mb-2 block">Semester</label>
+            <div className="flex gap-2">
+              {["1", "2"].map((sem) => (
+                <Button
+                  key={sem}
+                  onClick={() => handleSemesterFilter(sem)}
+                  variant={
+                    searchParams.semester === sem ? "default" : "outline"
+                  }
+                  size="sm"
+                >
+                  Sem {sem}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Faculty Filter */}
+          <div>
+            <label className="text-sm font-medium mb-2 block">Faculty</label>
+            <Select
+              value={searchParams.faculty || "all"}
+              onValueChange={handleFacultyFilter}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="All Faculties" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Faculties</SelectItem>
+                <SelectItem value="Computing">Computing</SelectItem>
+                <SelectItem value="Engineering">Engineering</SelectItem>
+                <SelectItem value="Science">Science</SelectItem>
+                <SelectItem value="Business">Business</SelectItem>
+                <SelectItem value="Arts and Social Sciences">
+                  Arts and Social Sciences
+                </SelectItem>
+                <SelectItem value="Design and Environment">
+                  Design and Environment
+                </SelectItem>
+                <SelectItem value="Law">Law</SelectItem>
+                <SelectItem value="Medicine">Medicine</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* MCs Range Filter */}
+          <div>
+            <label className="text-sm font-medium mb-2 block">
+              Module Credits (MCs): {mcRange[0]} -{" "}
+              {mcRange[1] === 8 ? "8+" : mcRange[1]}
+            </label>
+            <Slider
+              value={mcRange}
+              onValueChange={handleMcRangeChange}
+              min={0}
+              max={8}
+              step={1}
+              className="w-full"
+            />
+          </div>
+        </div>
       )}
 
       {/* Loading State */}
@@ -169,7 +285,7 @@ export function NUSModuleSearch({ onModuleSelect }: NUSModuleSearchProps) {
           </div>
 
           <div className="space-y-3">
-            {data.modules.map((module) => (
+            {data.modules.map((module: AnyModule) => (
               <ModuleCard
                 key={module.code}
                 module={module}
