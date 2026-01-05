@@ -122,7 +122,7 @@ export function NUSModuleSearch({ onModuleSelect }: NUSModuleSearchProps) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="w-full max-w-4xl mx-auto p-4 space-y-4">
       {/* Search input */}
       <Input
         value={searchParams.search ?? ""}
@@ -211,11 +211,11 @@ export function NUSModuleSearch({ onModuleSelect }: NUSModuleSearchProps) {
                 <SelectItem value="Engineering">Engineering</SelectItem>
                 <SelectItem value="Science">Science</SelectItem>
                 <SelectItem value="Business">Business</SelectItem>
-                <SelectItem value="Arts and Social Sciences">
-                  Arts and Social Sciences
+                <SelectItem value="Arts and Social Science">
+                  Arts and Social Science
                 </SelectItem>
-                <SelectItem value="Design and Environment">
-                  Design and Environment
+                <SelectItem value="College of Design and Engineering">
+                  College of Design and Engineering
                 </SelectItem>
                 <SelectItem value="Law">Law</SelectItem>
                 <SelectItem value="Medicine">Medicine</SelectItem>

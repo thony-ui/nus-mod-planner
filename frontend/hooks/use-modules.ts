@@ -89,6 +89,9 @@ export function useNTUModuleSearch(
   params: {
     search?: string;
     dept?: string;
+    gradeType?: string;
+    minAus?: number;
+    maxAus?: number;
     limit?: number;
     offset?: number;
   },

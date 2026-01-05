@@ -178,9 +178,9 @@ export class ModuleRepository {
         );
       }
 
-      // Apply faculty filter
+      // Apply faculty filter (case-insensitive contains)
       if (params.faculty) {
-        query = query.eq("faculty", params.faculty);
+        query = query.ilike("faculty", `%${params.faculty}%`);
       }
 
       // Apply semester filter

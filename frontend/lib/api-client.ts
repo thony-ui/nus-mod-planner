@@ -245,6 +245,9 @@ class ApiClient {
   async searchNTUModules(params: {
     search?: string;
     dept?: string;
+    gradeType?: string;
+    minAus?: number;
+    maxAus?: number;
     limit?: number;
     offset?: number;
   }): Promise<{ data: NTUModule[]; count: number }> {

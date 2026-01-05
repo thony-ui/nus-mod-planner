@@ -179,9 +179,9 @@ export class NTUModuleRepository {
         );
       }
 
-      // Apply department filter
+      // Apply department filter (case-insensitive contains)
       if (params.dept) {
-        query = query.eq("dept", params.dept);
+        query = query.ilike("dept", `%${params.dept}%`);
       }
 
       // Apply grade type filter
