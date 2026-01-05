@@ -1,7 +1,7 @@
 import { Router, Application } from "express";
-import { ModuleRepository } from "../../domain/module.repository";
-import { ModuleService } from "../../domain/module.service";
-import { ModuleController } from "../../domain/module.controller";
+import { ModuleRepository } from "../../domain/nus-module.repository";
+import { ModuleService } from "../../domain/nus-module.service";
+import { ModuleController } from "../../domain/nus-module.controller";
 import { NUSModsSyncService } from "../../domain/nusmods-sync.service";
 
 /**

@@ -5,6 +5,7 @@ import {
   ModuleSearchParams,
   ModuleSearchResult,
   ModuleStats,
+  NTUModule,
 } from "@/types/module";
 import {
   Plan,
@@ -232,6 +233,75 @@ class ApiClient {
   async getProgrammes(): Promise<Programme[]> {
     const response = await this.client.get<Programme[]>("/v1/programmes");
     return response.data;
+  }
+
+  /**
+   * NTU Module API methods
+   */
+
+  /**
+   * Search NTU modules (basic search)
+   */
+  async searchNTUModules(params: {
+    search?: string;
+    dept?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ data: NTUModule[]; count: number }> {
+    const response = await this.client.get<{
+      success: boolean;
+      data: NTUModule[];
+      count: number;
+    }>("/v1/ntu-modules", {
+      params,
+    });
+    return { data: response.data.data, count: response.data.count };
+  }
+
+  /**
+   * Get NTU module by code
+   */
+  async getNTUModule(code: string): Promise<NTUModule> {
+    const response = await this.client.get<{
+      success: boolean;
+      data: NTUModule;
+    }>(`/v1/ntu-modules/${code}`);
+    return response.data.data;
+  }
+
+  /**
+   * Semantic search NTU modules using RAG
+   */
+  async searchNTUModulesSemantic(
+    query: string,
+    limit: number = 20,
+    threshold: number = 0.5
+  ): Promise<{
+    modules: NTUModule[];
+    total: number;
+  }> {
+    const response = await this.client.get<{
+      success: boolean;
+      data: {
+        modules: NTUModule[];
+        total: number;
+      };
+    }>(`/v1/ntu-modules/search`, {
+      params: { query, limit, threshold },
+    });
+
+    return response.data.data;
+  }
+
+  /**
+   * Sync NTU modules (admin)
+   */
+  async syncNTUModules(): Promise<{ message: string; status: string }> {
+    const response = await this.client.post<{
+      success: boolean;
+      message: string;
+    }>("/v1/ntu-modules/sync");
+    return { message: response.data.message, status: "success" };
   }
 }
 

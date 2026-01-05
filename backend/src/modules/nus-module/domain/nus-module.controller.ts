@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
-import { ModuleService } from "./module.service";
 import logger from "../../../logger";
-import { ModuleSearchParams } from "./module.interface";
+import { ModuleService } from "./nus-module.service";
+import { ModuleSearchParams } from "./nus-module.interface";
 
 /**
  * Controller for module endpoints

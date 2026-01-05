@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
-import { ModuleController } from "../domain/module.controller";
-import { ModuleService } from "../domain/module.service";
-import { Module } from "../domain/module.interface";
+import { ModuleController } from "../domain/nus-module.controller";
+import { ModuleService } from "../domain/nus-module.service";
+import { Module } from "../domain/nus-module.interface";
 
 jest.mock("../../../logger");
 

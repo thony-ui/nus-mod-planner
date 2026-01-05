@@ -4,7 +4,7 @@
  */
 
 import { PlanRepository } from "./plan.repository";
-import { ModuleRepository } from "../../module/domain/module.repository";
+import { ModuleRepository } from "../../nus-module/domain/nus-module.repository";
 import { ProgrammeRepository } from "../../programme/domain/programme.repository";
 import {
   Plan,

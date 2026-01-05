@@ -4,7 +4,7 @@ import {
   NUSModsModule,
   NUSModsModuleCondensed,
   Module,
-} from "./module.interface";
+} from "./nus-module.interface";
 
 /**
  * Service responsible for fetching and normalizing NUSMods data

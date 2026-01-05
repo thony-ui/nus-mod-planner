@@ -1,8 +1,35 @@
+"use client";
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ProtectedRoute } from "@/components/layout/protected-route";
+import { useCreatePlan } from "@/hooks/use-plans";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 export default function Home() {
+  const createPlan = useCreatePlan();
+  const router = useRouter();
+
+  const handleGetStarted = async () => {
+    try {
+      await createPlan.mutateAsync({
+        name: "My Study Plan",
+        programme: "", // Empty programme - user can set later
+        currentYear: 1,
+        currentSemester: 1,
+        maxMcPerSemester: 24,
+        minMcPerSemester: 12,
+        pacingPreference: "medium",
+      });
+
+      // Navigate to planner
+      router.push("/planner");
+    } catch (error) {
+      console.error("Failed to create plan:", error);
+    }
+  };
+
   return (
     <ProtectedRoute>
       <div className="min-h-[calc(100vh-64px)] flex flex-col flex-1 items-center justify-center bg-background">
@@ -18,8 +45,19 @@ export default function Home() {
             </p>
           </div>
           <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-            <Button asChild size="lg">
-              <Link href="/onboarding">Get Started</Link>
+            <Button
+              onClick={handleGetStarted}
+              disabled={createPlan.isPending}
+              size="lg"
+            >
+              {createPlan.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating Plan...
+                </>
+              ) : (
+                "Get Started"
+              )}
             </Button>
             <Button asChild variant="outline" size="lg">
               <Link href="/modules">Browse Modules</Link>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Module } from "@/types/module";
+import { Module, AnyModule, isNTUModule, University } from "@/types/module";
 import {
   Dialog,
   DialogContent,
@@ -12,22 +12,29 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ModuleDetailsDialogProps {
-  module: Module | null;
+  module: AnyModule | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  university?: University;
 }
 
 export function ModuleDetailsDialog({
   module,
   open,
   onOpenChange,
+  university = "NUS",
 }: ModuleDetailsDialogProps) {
   if (!module) return null;
+
+  const isNTU = isNTUModule(module);
+  const credits =
+    isNTU && "aus" in module ? module.aus : "mcs" in module ? module.mcs : 0;
+  const creditLabel = isNTU ? "AU" : "MC";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader className="flex-shrink-0">
+        <DialogHeader className="shrink-0">
           <DialogTitle className="text-2xl pr-8">
             <div className="font-bold">{module.code}</div>
             <div className="text-base font-normal text-muted-foreground mt-1">
@@ -35,9 +42,12 @@ export function ModuleDetailsDialog({
             </div>
           </DialogTitle>
           <div className="pt-2">
-            <Badge variant="secondary" className="w-fit">
-              {module.mcs} MC{module.mcs !== 1 ? "s" : ""}
-            </Badge>
+            {credits !== undefined && credits !== null && (
+              <Badge variant="secondary" className="w-fit">
+                {credits} {creditLabel}
+                {credits !== 1 ? "s" : ""}
+              </Badge>
+            )}
           </div>
         </DialogHeader>
 
@@ -55,13 +65,18 @@ export function ModuleDetailsDialog({
 
             {/* Faculty & Department */}
             <div className="flex flex-wrap gap-2">
-              {module.faculty && (
+              {!isNTU && "faculty" in module && module.faculty && (
                 <Badge variant="outline">{module.faculty}</Badge>
               )}
-              {module.department && (
+              {!isNTU && "department" in module && module.department && (
                 <Badge variant="outline">{module.department}</Badge>
               )}
-              {module.semestersOffered &&
+              {isNTU && module.dept && (
+                <Badge variant="outline">{module.dept}</Badge>
+              )}
+              {!isNTU &&
+                "semestersOffered" in module &&
+                module.semestersOffered &&
                 module.semestersOffered.length > 0 && (
                   <Badge
                     variant="outline"
@@ -72,8 +87,8 @@ export function ModuleDetailsDialog({
                 )}
             </div>
 
-            {/* Workload */}
-            {module.workload && (
+            {/* NUS-specific fields */}
+            {!isNTU && "workload" in module && module.workload && (
               <div>
                 <h3 className="font-semibold mb-2 text-base">Workload</h3>
                 <div className="text-sm bg-muted/50 p-3 rounded-md">
@@ -95,8 +110,25 @@ export function ModuleDetailsDialog({
               </div>
             )}
 
+            {/* NTU-specific fields */}
+            {isNTU && module.exam && (
+              <div>
+                <h3 className="font-semibold mb-2 text-base">Exam</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed bg-muted/30 p-3 rounded-md">
+                  {module.exam}
+                </p>
+              </div>
+            )}
+
+            {isNTU && module.gradeType && (
+              <div>
+                <h3 className="font-semibold mb-2 text-base">Grade Type</h3>
+                <Badge variant="outline">{module.gradeType}</Badge>
+              </div>
+            )}
+
             {/* Prerequisites */}
-            {module.prereqText && (
+            {!isNTU && "prereqText" in module && module.prereqText && (
               <div>
                 <h3 className="font-semibold mb-2 text-base">Prerequisites</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed bg-muted/30 p-3 rounded-md">
@@ -105,8 +137,25 @@ export function ModuleDetailsDialog({
               </div>
             )}
 
-            {/* Corequisites */}
-            {module.coreqText && (
+            {isNTU &&
+              module.prerequisites &&
+              module.prerequisites.length > 0 && (
+                <div>
+                  <h3 className="font-semibold mb-2 text-base">
+                    Prerequisites
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {module.prerequisites.map((prereq, idx) => (
+                      <Badge key={idx} variant="outline">
+                        {prereq}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+            {/* Corequisites (NUS only) */}
+            {!isNTU && "coreqText" in module && module.coreqText && (
               <div>
                 <h3 className="font-semibold mb-2 text-base">Corequisites</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed bg-muted/30 p-3 rounded-md">
@@ -116,7 +165,7 @@ export function ModuleDetailsDialog({
             )}
 
             {/* Preclusions */}
-            {module.preclusionText && (
+            {!isNTU && "preclusionText" in module && module.preclusionText && (
               <div>
                 <h3 className="font-semibold mb-2 text-base">Preclusions</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed bg-muted/30 p-3 rounded-md">
@@ -125,8 +174,27 @@ export function ModuleDetailsDialog({
               </div>
             )}
 
-            {/* Fulfill Requirements */}
-            {module.fulfillRequirements &&
+            {isNTU &&
+              module.mutuallyExclusive &&
+              module.mutuallyExclusive.length > 0 && (
+                <div>
+                  <h3 className="font-semibold mb-2 text-base">
+                    Mutually Exclusive
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {module.mutuallyExclusive.map((me, idx) => (
+                      <Badge key={idx} variant="outline">
+                        {me}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+            {/* Fulfill Requirements (NUS only) */}
+            {!isNTU &&
+              "fulfillRequirements" in module &&
+              module.fulfillRequirements &&
               module.fulfillRequirements.length > 0 && (
                 <div>
                   <h3 className="font-semibold mb-2 text-base">
@@ -142,28 +210,31 @@ export function ModuleDetailsDialog({
                 </div>
               )}
 
-            {/* Attributes */}
-            {module.attributes && Object.keys(module.attributes).length > 0 && (
-              <div>
-                <h3 className="font-semibold mb-2 text-base">Attributes</h3>
-                <div className="flex flex-wrap gap-2">
-                  {module.attributes.su && (
-                    <Badge variant="outline">S/U Available</Badge>
-                  )}
-                  {module.attributes.sfsCredit && (
-                    <Badge variant="outline">
-                      SFS Credit: {module.attributes.sfsCredit}
-                    </Badge>
-                  )}
-                  {module.attributes.mpes1 && (
-                    <Badge variant="outline">MPES1</Badge>
-                  )}
-                  {module.attributes.mpes2 && (
-                    <Badge variant="outline">MPES2</Badge>
-                  )}
+            {/* Attributes (NUS only) */}
+            {!isNTU &&
+              "attributes" in module &&
+              module.attributes &&
+              Object.keys(module.attributes).length > 0 && (
+                <div>
+                  <h3 className="font-semibold mb-2 text-base">Attributes</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {module.attributes.su && (
+                      <Badge variant="outline">S/U Available</Badge>
+                    )}
+                    {module.attributes.sfsCredit && (
+                      <Badge variant="outline">
+                        SFS Credit: {module.attributes.sfsCredit}
+                      </Badge>
+                    )}
+                    {module.attributes.mpes1 && (
+                      <Badge variant="outline">MPES1</Badge>
+                    )}
+                    {module.attributes.mpes2 && (
+                      <Badge variant="outline">MPES2</Badge>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
           </div>
         </ScrollArea>
       </DialogContent>
