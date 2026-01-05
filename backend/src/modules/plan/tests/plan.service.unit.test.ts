@@ -3,7 +3,7 @@ import { PlanRepository } from "../domain/plan.repository";
 import { Plan, CreatePlanDto, UpdatePlanDto } from "../domain/plan.interface";
 
 jest.mock("../../../logger");
-jest.mock("../../module/domain/module.repository");
+jest.mock("../../nus-module/domain/nus-module.repository");
 jest.mock("../../programme/domain/programme.repository");
 
 describe("PlanService", () => {

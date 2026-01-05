@@ -4,12 +4,15 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, GripVertical } from "lucide-react";
+import { University } from "@/types/module";
 
 interface SortableModuleCardProps {
   moduleCode: string;
   isPinned: boolean;
   semester: string;
   isDragging?: boolean;
+
+  university: University;
 }
 
 export function SortableModuleCard({
@@ -17,6 +20,7 @@ export function SortableModuleCard({
   isPinned,
   semester,
   isDragging,
+  university,
 }: SortableModuleCardProps) {
   const {
     attributes,
@@ -33,7 +37,9 @@ export function SortableModuleCard({
     opacity: isDragging || isSortableDragging ? 0.3 : 1,
   };
 
+  // TODO uh shag need to save the university also
   const nusmods_url = `https://nusmods.com/courses/${moduleCode}`;
+  const ntumods_url = `https://ntumods.com/mods/${moduleCode}`;
 
   return (
     <div
@@ -54,15 +60,12 @@ export function SortableModuleCard({
 
       {/* Content */}
       <div className="flex justify-between items-start gap-2 flex-1 min-w-0">
-        <a
-          href={nusmods_url}
-          target="_blank"
+        <div
           rel="noopener noreferrer"
-          className="font-medium hover:underline flex items-center gap-1 flex-1 cursor-pointer text-sm md:text-base truncate"
+          className="font-medium flex items-center gap-1 flex-1 text-sm md:text-base truncate"
         >
           <span className="truncate">{moduleCode}</span>
-          <ExternalLink className="h-3 w-3 shrink-0" />
-        </a>
+        </div>
         {isPinned && (
           <Badge variant="secondary" className="text-xs shrink-0">
             Pinned

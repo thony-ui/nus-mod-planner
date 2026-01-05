@@ -4,14 +4,14 @@ import {
   Module,
   ModuleSearchParams,
   ModuleSearchResult,
-} from "./module.interface";
+} from "./nus-module.interface";
 
 /**
  * Repository for module data access
  * Follows Repository Pattern and Single Responsibility Principle
  */
 export class ModuleRepository {
-  private readonly TABLE_NAME = "modules";
+  private readonly TABLE_NAME = "nus_modules";
 
   /**
    * Insert or update a module in the database

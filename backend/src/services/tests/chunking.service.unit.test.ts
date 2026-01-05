@@ -1,6 +1,6 @@
-import { ChunkingService } from "../domain/chunking.service";
+import { ChunkingService } from "../chunking.service";
 
-jest.mock("../../../logger");
+jest.mock("../../logger");
 
 describe("ChunkingService", () => {
   let chunkingService: ChunkingService;

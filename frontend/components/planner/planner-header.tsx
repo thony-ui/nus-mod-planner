@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Edit2, Check, X } from "lucide-react";
+import { Edit2, Check, X, Download } from "lucide-react";
 import { Plan } from "@/types/plan";
+import { exportPlanToPDF } from "@/lib/pdf-export";
 
 interface PlannerHeaderProps {
   plan: Plan;
@@ -36,6 +37,33 @@ export function PlannerHeader({
     setEditedName("");
   };
 
+  const handleExportPDF = async () => {
+    try {
+      // Transform semester plan to match PDF export format
+      const semesterPlanForPDF: {
+        [semester: string]: { code: string; mcs: number }[];
+      } = {};
+
+      Object.entries(plan.semesterPlan).forEach(([semester, modules]) => {
+        semesterPlanForPDF[semester] = modules.map((m) => ({
+          code: m.module,
+          mcs: m.mcs,
+        }));
+      });
+
+      await exportPlanToPDF(
+        {
+          name: plan.name,
+          semesterPlan: semesterPlanForPDF,
+        },
+        `${plan.name.replace(/\s+/g, "_")}.pdf`
+      );
+    } catch (error) {
+      console.error("Failed to export PDF:", error);
+      alert("Failed to export PDF. Please try again.");
+    }
+  };
+
   return (
     <div className="mb-6">
       <div className="flex justify-between items-start gap-4 mb-4">
@@ -46,10 +74,7 @@ export function PlannerHeader({
                 value={editedName}
                 onChange={(e) => setEditedName(e.target.value)}
                 className="text-4xl font-bold h-auto py-2"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSaveName();
-                  if (e.key === "Escape") handleCancelEdit();
-                }}
+                onKeyDown={handleSaveName}
                 autoFocus
               />
               <Button size="icon" variant="ghost" onClick={handleSaveName}>
@@ -67,6 +92,12 @@ export function PlannerHeader({
               </Button>
             </div>
           )}
+          <div className="flex gap-2">
+            <Button onClick={handleExportPDF} variant="outline">
+              <Download className="h-4 w-4 mr-2" />
+              Export PDF
+            </Button>
+          </div>
           <p className="text-lg text-muted-foreground">{plan.programme}</p>
           <p className="text-sm text-muted-foreground mt-2">
             Total MCs: <span className="font-semibold">{totalMC}</span>

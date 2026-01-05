@@ -1,14 +1,14 @@
 import logger from "../../../logger";
-import { ModuleRepository } from "./module.repository";
-import { ModuleChunkRepository } from "./module-chunk.repository";
+import { ModuleRepository } from "./nus-module.repository";
+import { ModuleChunkRepository } from "./nus-module-chunk.repository";
 import { NUSModsSyncService } from "./nusmods-sync.service";
-import { ChunkingService } from "./chunking.service";
-import { QueryExpansionService } from "./query-expansion.service";
+import { ChunkingService } from "../../../services/chunking.service";
+import { QueryExpansionService } from "../../../services/query-expansion.service";
 import {
   Module,
   ModuleSearchParams,
   ModuleSearchResult,
-} from "./module.interface";
+} from "./nus-module.interface";
 
 /**
  * Service layer for module operations

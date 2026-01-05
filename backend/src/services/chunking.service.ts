@@ -3,7 +3,7 @@
  * Splits module descriptions into semantic chunks for RAG
  */
 
-import logger from "../../../logger";
+import logger from "../logger";
 
 export interface TextChunk {
   text: string;

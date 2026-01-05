@@ -1,12 +1,12 @@
-import { ModuleService } from "../domain/module.service";
-import { ModuleRepository } from "../domain/module.repository";
+import { Module, ModuleSearchParams } from "../domain/nus-module.interface";
+import { ModuleRepository } from "../domain/nus-module.repository";
+import { ModuleService } from "../domain/nus-module.service";
 import { NUSModsSyncService } from "../domain/nusmods-sync.service";
-import { Module, ModuleSearchParams } from "../domain/module.interface";
 
 jest.mock("../../../logger");
-jest.mock("../domain/module-chunk.repository");
-jest.mock("../domain/chunking.service");
-jest.mock("../domain/query-expansion.service");
+jest.mock("../domain/nus-module-chunk.repository");
+jest.mock("../../../services/chunking.service");
+jest.mock("../../../services/query-expansion.service");
 
 describe("ModuleService", () => {
   let moduleService: ModuleService;

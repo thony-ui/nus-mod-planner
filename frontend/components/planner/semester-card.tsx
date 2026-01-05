@@ -11,6 +11,7 @@ import {
 } from "@dnd-kit/sortable";
 import { useDroppable } from "@dnd-kit/core";
 import { Plus, X } from "lucide-react";
+import { University } from "@/types/module";
 
 interface SemesterCardProps {
   semester: string;
@@ -20,6 +21,8 @@ interface SemesterCardProps {
   onAddModule: () => void;
   onDeleteModule: (moduleCode: string) => void;
   onDeleteSemester: () => void;
+
+  university: University;
 }
 
 function DroppableSemesterCard({
@@ -48,6 +51,7 @@ export function SemesterCard({
   onAddModule,
   onDeleteModule,
   onDeleteSemester,
+  university,
 }: SemesterCardProps) {
   return (
     <Card className="flex flex-col">
@@ -83,12 +87,13 @@ export function SemesterCard({
                         moduleCode={moduleCode}
                         isPinned={false}
                         semester={semester}
+                        university={university}
                         isDragging={activeId === `${semester}-${moduleCode}`}
                       />
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="absolute top-3 right-1 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                        className="absolute top-3 right-1  h-6 w-6 p-0 cursor-pointer"
                         onClick={() => onDeleteModule(moduleCode)}
                       >
                         <X className="h-3 w-3" />

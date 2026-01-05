@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, Sparkles, Loader2 } from "lucide-react";
-import { Module } from "@/types/module";
+import { Module, AnyModule, isNTUModule, University } from "@/types/module";
 
 interface AddModuleDialogProps {
   open: boolean;
@@ -22,8 +22,9 @@ interface AddModuleDialogProps {
   setSearchQuery: (query: string) => void;
   useSemanticMode: boolean;
   setUseSemanticMode: (mode: boolean) => void;
-  searchResults: { modules: Module[] } | undefined;
+  searchResults: { modules: AnyModule[] } | undefined;
   searchLoading: boolean;
+  university?: University;
 }
 
 export function AddModuleDialog({
@@ -37,12 +38,15 @@ export function AddModuleDialog({
   setUseSemanticMode,
   searchResults,
   searchLoading,
+  university = "NUS",
 }: AddModuleDialogProps) {
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader className="shrink-0">
-          <DialogTitle>Add Module to {semester}</DialogTitle>
+          <DialogTitle>
+            Add {university} Module to {semester}
+          </DialogTitle>
 
           {/* Search Mode Toggle */}
           <div className="flex gap-2 mt-4">
@@ -71,8 +75,8 @@ export function AddModuleDialog({
             <Input
               placeholder={
                 useSemanticMode
-                  ? "AI search (e.g., 'machine learning with practical applications')..."
-                  : "Search by code or title..."
+                  ? `AI search ${university} modules (e.g., 'machine learning with practical applications')...`
+                  : `Search ${university} modules by code or title...`
               }
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -93,25 +97,38 @@ export function AddModuleDialog({
             </p>
           )}
           <div className="space-y-2 pb-4">
-            {searchResults?.modules.map((module: Module) => (
-              <div
-                key={module.code}
-                className="p-3 border rounded hover:bg-muted cursor-pointer transition-colors"
-                onClick={() => onAddModule(module.code, module.mcs)}
-              >
-                <div className="flex justify-between items-start gap-2">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold">{module.code}</h3>
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {module.title}
-                    </p>
+            {searchResults?.modules.map((module: AnyModule) => {
+              const isNTU = isNTUModule(module);
+              const credits =
+                isNTU && "aus" in module
+                  ? module.aus
+                  : "mcs" in module
+                  ? module.mcs
+                  : 0;
+              const creditLabel = isNTU ? "AUs" : "MCs";
+
+              return (
+                <div
+                  key={module.code}
+                  className="p-3 border rounded hover:bg-muted cursor-pointer transition-colors"
+                  onClick={() => onAddModule(module.code, credits || 0)}
+                >
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold">{module.code}</h3>
+                      <p className="text-sm text-muted-foreground line-clamp-2">
+                        {module.title}
+                      </p>
+                    </div>
+                    {credits !== undefined && credits !== null && (
+                      <Badge variant="outline" className="shrink-0">
+                        {credits} {creditLabel}
+                      </Badge>
+                    )}
                   </div>
-                  <Badge variant="outline" className="shrink-0">
-                    {module.mcs} MCs
-                  </Badge>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </ScrollArea>
       </DialogContent>

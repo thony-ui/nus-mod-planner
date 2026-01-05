@@ -1,15 +1,17 @@
 import jsPDF from "jspdf";
 
+interface SemesterMod {
+  code: string;
+  mcs: number;
+}
+
 interface SemesterPlan {
-  [semester: string]: string[];
+  [semester: string]: SemesterMod[];
 }
 
 interface PlanData {
   name: string;
-  programme: string;
   semesterPlan: SemesterPlan;
-  minMcPerSemester?: number;
-  maxMcPerSemester?: number;
 }
 
 export async function exportPlanToPDF(
@@ -41,21 +43,8 @@ export async function exportPlanToPDF(
 
     pdf.setFontSize(12);
     pdf.setFont("helvetica", "normal");
-    pdf.text(planData.programme, marginLeft, 30);
 
     // Add MC constraints if available
-    if (
-      planData.minMcPerSemester !== undefined &&
-      planData.maxMcPerSemester !== undefined
-    ) {
-      pdf.setFontSize(10);
-      pdf.setTextColor(107, 114, 128); // Medium gray
-      pdf.text(
-        `MC Range: ${planData.minMcPerSemester} - ${planData.maxMcPerSemester} per semester`,
-        marginLeft,
-        40
-      );
-    }
 
     yPosition = 65;
     pdf.setTextColor(0, 0, 0);
@@ -112,7 +101,11 @@ export async function exportPlanToPDF(
         }
 
         pdf.setTextColor(0, 0, 0);
-        pdf.text(`• ${module}`, marginLeft + 5, yPosition);
+        pdf.text(
+          `• ${module.code} (${module.mcs} MCs)`,
+          marginLeft + 5,
+          yPosition
+        );
         yPosition += 8;
       });
 

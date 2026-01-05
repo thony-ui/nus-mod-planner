@@ -1,11 +1,12 @@
 import bodyParser from "body-parser";
 import express from "express";
 import cors from "cors"; // Add this import
-import { defineModuleRoutes } from "./modules/module";
+import { defineModuleRoutes } from "./modules/nus-module";
 import { Server } from "http";
 import { defineUserRoutes } from "./modules/user";
 import { definePlanRoutes } from "./modules/plan";
 import { defineProgrammeRoutes } from "./modules/programme/entry-point/api/routes";
+import { defineNTUModuleRoutes } from "./modules/ntu-module/entry-point/api/routes";
 
 require("dotenv").config(); // Load environment variables from .env file
 
@@ -32,6 +33,7 @@ defineUserRoutes(app);
 defineModuleRoutes(app);
 definePlanRoutes(app);
 defineProgrammeRoutes(app);
+defineNTUModuleRoutes(app);
 
 const port = process.env.USER_SERVICE_PORT || 8000;
 let server: Server;

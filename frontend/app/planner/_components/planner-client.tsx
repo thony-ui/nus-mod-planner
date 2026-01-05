@@ -6,11 +6,16 @@ import { PlannerHeader } from "@/components/planner/planner-header";
 import { SemesterCard } from "@/components/planner/semester-card";
 import { SortableModuleCard } from "@/components/planner/sortable-module-card";
 import { Button } from "@/components/ui/button";
+import { UniversityToggle } from "@/components/ui/university-toggle";
 import { useDragDropSensors, handleModuleDragEnd } from "@/hooks/use-drag-drop";
-import { useModuleSearch } from "@/hooks/use-modules";
+import { useModuleSearch, useNTUModuleSearch } from "@/hooks/use-modules";
 import { useActivePlan, usePlan, useUpdatePlan } from "@/hooks/use-plans";
-import { useSemanticSearch } from "@/hooks/use-semantic-search";
+import {
+  useSemanticSearch,
+  useNTUSemanticSearch,
+} from "@/hooks/use-semantic-search";
 import { SemesterModules } from "@/types/plan";
+import { University } from "@/types/module";
 import { DragEndEvent, DndContext, DragOverlay } from "@dnd-kit/core";
 import { Loader2, Plus } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -41,6 +46,7 @@ function PlannerClient() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSemester, setSelectedSemester] = useState<string | null>(null);
   const [useSemanticMode, setUseSemanticMode] = useState(true);
+  const [university, setUniversity] = useState<University>("NUS");
   const [moduleToDelete, setModuleToDelete] = useState<{
     semester: string;
     moduleCode: string;
@@ -51,17 +57,57 @@ function PlannerClient() {
 
   const sensors = useDragDropSensors();
 
-  // Search results
-  const { data: semanticResults, isLoading: semanticLoading } =
-    useSemanticSearch(searchQuery);
-  const { data: traditionalResults, isLoading: traditionalLoading } =
-    useModuleSearch({
+  // Search results - conditionally call based on university
+  const nusSemanticSearch = useSemanticSearch(
+    searchQuery,
+    20,
+    university !== "NTU" && useSemanticMode
+  );
+  const ntuSemanticSearch = useNTUSemanticSearch(
+    searchQuery,
+    20,
+    university === "NTU" && useSemanticMode
+  );
+  const nusTraditionalSearch = useModuleSearch(
+    {
       search: searchQuery,
       limit: 20,
       offset: 0,
-    });
+    },
+    university !== "NTU" && !useSemanticMode
+  );
+  const ntuTraditionalSearch = useNTUModuleSearch(
+    {
+      search: searchQuery,
+      limit: 20,
+      offset: 0,
+    },
+    university === "NTU" && !useSemanticMode
+  );
 
-  const searchResults = useSemanticMode ? semanticResults : traditionalResults;
+  // Select results based on university
+  const semanticResults =
+    university === "NTU" ? ntuSemanticSearch.data : nusSemanticSearch.data;
+  const semanticLoading =
+    university === "NTU"
+      ? ntuSemanticSearch.isLoading
+      : nusSemanticSearch.isLoading;
+
+  const traditionalData =
+    university === "NTU" && ntuTraditionalSearch.data
+      ? {
+          modules: ntuTraditionalSearch.data.data,
+          total: ntuTraditionalSearch.data.count,
+          limit: 20,
+          offset: 0,
+        }
+      : nusTraditionalSearch.data;
+  const traditionalLoading =
+    university === "NTU"
+      ? ntuTraditionalSearch.isLoading
+      : nusTraditionalSearch.isLoading;
+
+  const searchResults = useSemanticMode ? semanticResults : traditionalData;
   const searchLoading = useSemanticMode ? semanticLoading : traditionalLoading;
 
   // Handlers
@@ -220,7 +266,7 @@ function PlannerClient() {
               totalMC={totalMC}
             />
 
-            <div className="mb-4">
+            <div className="mb-4 flex gap-4 items-center flex-wrap">
               <Button
                 onClick={() => setShowAddSemester(true)}
                 variant="outline"
@@ -228,6 +274,11 @@ function PlannerClient() {
                 <Plus className="h-4 w-4 mr-2" />
                 Add Semester
               </Button>
+
+              <UniversityToggle
+                university={university}
+                onUniversityChange={setUniversity}
+              />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -247,6 +298,7 @@ function PlannerClient() {
                       modules={modules}
                       semesterMC={semesterMC}
                       activeId={activeId}
+                      university={university}
                       onAddModule={() => {
                         setSelectedSemester(semester);
                         setSearchQuery("");
@@ -269,6 +321,7 @@ function PlannerClient() {
               }}
               onAddModule={handleAddModule}
               searchQuery={searchQuery}
+              university={university}
               setSearchQuery={setSearchQuery}
               useSemanticMode={useSemanticMode}
               setUseSemanticMode={setUseSemanticMode}
@@ -305,6 +358,7 @@ function PlannerClient() {
               moduleCode={activeId.split("-").slice(1).join("-")}
               isPinned={false}
               semester=""
+              university={university}
             />
           ) : null}
         </DragOverlay>

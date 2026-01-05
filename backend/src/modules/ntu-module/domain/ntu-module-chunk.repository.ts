@@ -1,12 +1,12 @@
 /**
- * Module Chunks Repository
+ * NTU Module Chunks Repository
  * Handles vector search and chunk management for semantic search
  */
 
 import supabase from "../../../lib/supabase-client";
 import logger from "../../../logger";
 
-export interface ModuleChunk {
+export interface NTUModuleChunk {
   id: string;
   moduleCode: string;
   chunkText: string;
@@ -17,16 +17,16 @@ export interface ModuleChunk {
 }
 
 export interface ChunkSearchResult {
-  chunk: ModuleChunk;
+  chunk: NTUModuleChunk;
   similarity: number;
   moduleCode: string;
 }
 
-export class ModuleChunkRepository {
-  private readonly TABLE_NAME = "module_chunks";
+export class NTUModuleChunkRepository {
+  private readonly TABLE_NAME = "ntu_module_chunks";
 
   /**
-   * Insert or update module chunks
+   * Insert or update NTU module chunks
    */
   async upsertChunks(
     moduleCode: string,
@@ -51,16 +51,16 @@ export class ModuleChunkRepository {
 
       if (error) {
         logger.error(
-          `ModuleChunkRepository: Error upserting chunks for ${moduleCode}: ${error.message}`
+          `NTUModuleChunkRepository: Error upserting chunks for ${moduleCode}: ${error.message}`
         );
         throw new Error(`Failed to upsert chunks: ${error.message}`);
       }
 
       logger.info(
-        `ModuleChunkRepository: Upserted ${chunks.length} chunks for ${moduleCode}`
+        `NTUModuleChunkRepository: Upserted ${chunks.length} chunks for ${moduleCode}`
       );
     } catch (error) {
-      logger.error(`ModuleChunkRepository: Error in upsertChunks:`, error);
+      logger.error(`NTUModuleChunkRepository: Error in upsertChunks:`, error);
       throw error;
     }
   }
@@ -75,14 +75,14 @@ export class ModuleChunkRepository {
   ): Promise<ChunkSearchResult[]> {
     try {
       // Use RPC function for vector similarity search
-      const { data, error } = await supabase.rpc("search_module_chunks", {
+      const { data, error } = await supabase.rpc("search_ntu_module_chunks", {
         query_embedding: `[${queryEmbedding.join(",")}]`,
         match_count: topK,
       });
 
       if (error) {
         logger.error(
-          `ModuleChunkRepository: Error searching chunks: ${error.message}`
+          `NTUModuleChunkRepository: Error searching chunks: ${error.message}`
         );
         throw new Error(`Failed to search chunks: ${error.message}`);
       }
@@ -94,13 +94,13 @@ export class ModuleChunkRepository {
       }));
 
       logger.info(
-        `ModuleChunkRepository: Found ${results.length} similar chunks`
+        `NTUModuleChunkRepository: Found ${results.length} similar chunks`
       );
 
       return results;
     } catch (error) {
       logger.error(
-        `ModuleChunkRepository: Error in searchSimilarChunks:`,
+        `NTUModuleChunkRepository: Error in searchSimilarChunks:`,
         error
       );
       throw error;
@@ -110,7 +110,7 @@ export class ModuleChunkRepository {
   /**
    * Get all chunks for a specific module
    */
-  async getChunksByModule(moduleCode: string): Promise<ModuleChunk[]> {
+  async getChunksByModule(moduleCode: string): Promise<NTUModuleChunk[]> {
     try {
       const { data, error } = await supabase
         .from(this.TABLE_NAME)
@@ -120,14 +120,17 @@ export class ModuleChunkRepository {
 
       if (error) {
         logger.error(
-          `ModuleChunkRepository: Error fetching chunks for ${moduleCode}: ${error.message}`
+          `NTUModuleChunkRepository: Error fetching chunks for ${moduleCode}: ${error.message}`
         );
         throw new Error(`Failed to fetch chunks: ${error.message}`);
       }
 
       return (data || []).map((row) => this.mapDbToChunk(row));
     } catch (error) {
-      logger.error(`ModuleChunkRepository: Error in getChunksByModule:`, error);
+      logger.error(
+        `NTUModuleChunkRepository: Error in getChunksByModule:`,
+        error
+      );
       throw error;
     }
   }
@@ -144,15 +147,15 @@ export class ModuleChunkRepository {
 
       if (error) {
         logger.error(
-          `ModuleChunkRepository: Error deleting chunks for ${moduleCode}: ${error.message}`
+          `NTUModuleChunkRepository: Error deleting chunks for ${moduleCode}: ${error.message}`
         );
         throw new Error(`Failed to delete chunks: ${error.message}`);
       }
 
-      logger.info(`ModuleChunkRepository: Deleted chunks for ${moduleCode}`);
+      logger.info(`NTUModuleChunkRepository: Deleted chunks for ${moduleCode}`);
     } catch (error) {
       logger.error(
-        `ModuleChunkRepository: Error in deleteChunksByModule:`,
+        `NTUModuleChunkRepository: Error in deleteChunksByModule:`,
         error
       );
       throw error;
@@ -170,22 +173,22 @@ export class ModuleChunkRepository {
 
       if (error) {
         logger.error(
-          `ModuleChunkRepository: Error counting chunks: ${error.message}`
+          `NTUModuleChunkRepository: Error getting chunk count: ${error.message}`
         );
-        throw new Error(`Failed to count chunks: ${error.message}`);
+        throw new Error(`Failed to get chunk count: ${error.message}`);
       }
 
       return count || 0;
     } catch (error) {
-      logger.error(`ModuleChunkRepository: Error in getChunkCount:`, error);
+      logger.error(`NTUModuleChunkRepository: Error in getChunkCount:`, error);
       throw error;
     }
   }
 
   /**
-   * Map database row to ModuleChunk interface
+   * Map database row to NTUModuleChunk interface
    */
-  private mapDbToChunk(data: any): ModuleChunk {
+  private mapDbToChunk(data: any): NTUModuleChunk {
     return {
       id: data.id,
       moduleCode: data.module_code,

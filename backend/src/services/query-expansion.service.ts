@@ -4,8 +4,8 @@
  */
 
 import OpenAI from "openai";
-import logger from "../../../logger";
-import { queryExpansionPrompt } from "../../../prompts/llm-query-expansion-prompt";
+import logger from "../logger";
+import { queryExpansionPrompt } from "../prompts/llm-query-expansion-prompt";
 
 export class QueryExpansionService {
   private openai: OpenAI | null = null;

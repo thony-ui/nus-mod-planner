@@ -10,7 +10,7 @@ function Header() {
       <nav className="border-b">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link href="/" className="text-xl font-bold">
-            NUS Mod Planner
+            Mod Planner
           </Link>
           <div className="flex items-center gap-4">
             {user && (

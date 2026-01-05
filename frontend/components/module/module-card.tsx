@@ -7,7 +7,7 @@ import {
   CardContent,
 } from "../ui/card";
 import { Badge } from "../ui/badge";
-import { Module } from "@/types/module";
+import { AnyModule, isNTUModule, University } from "@/types/module";
 
 /**
  * Individual Module Card Component
@@ -16,11 +16,21 @@ import { Module } from "@/types/module";
 export function ModuleCard({
   module,
   onSelect,
+  university = "NUS",
 }: {
-  module: Module;
-  onSelect?: (module: Module) => void;
+  module: AnyModule;
+  onSelect?: (module: AnyModule) => void;
+  university?: University;
 }) {
-  const nusmods_url = `https://nusmods.com/courses/${module.code}`;
+  const isNTU = isNTUModule(module);
+
+  const external_url = isNTU
+    ? module.url || `https://ntumods.com/mods/${module.code}`
+    : `https://nusmods.com/courses/${module.code}`;
+
+  const credits =
+    isNTU && "aus" in module ? module.aus : "mcs" in module ? module.mcs : 0;
+  const creditLabel = isNTU ? "AU" : "MC";
 
   return (
     <Card
@@ -35,7 +45,7 @@ export function ModuleCard({
             <div className="flex items-center gap-2">
               <CardTitle className="text-lg">{module.code}</CardTitle>
               <a
-                href={nusmods_url}
+                href={external_url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary hover:text-primary/80"
@@ -46,14 +56,20 @@ export function ModuleCard({
             </div>
             <CardDescription>{module.title}</CardDescription>
           </div>
-          <Badge variant="secondary">
-            {module.mcs} MC{module.mcs !== 1 ? "s" : ""}
-          </Badge>
+          {credits !== undefined && credits !== null && (
+            <Badge variant="secondary">
+              {credits} {creditLabel}
+              {credits !== 1 ? "s" : ""}
+            </Badge>
+          )}
         </div>
       </CardHeader>
       {(module.description ||
-        module.faculty ||
-        module.semestersOffered?.length > 0) && (
+        (!isNTU && "faculty" in module && module.faculty) ||
+        (isNTU && module.dept) ||
+        (!isNTU &&
+          "semestersOffered" in module &&
+          module.semestersOffered?.length > 0)) && (
         <CardContent>
           {module.description && (
             <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
@@ -61,17 +77,23 @@ export function ModuleCard({
             </p>
           )}
           <div className="flex flex-wrap gap-2 text-xs">
-            {module.faculty && (
+            {!isNTU && "faculty" in module && module.faculty && (
               <Badge variant="outline">{module.faculty}</Badge>
             )}
-            {module.semestersOffered && module.semestersOffered.length > 0 && (
-              <Badge
-                variant="outline"
-                className="bg-green-50 dark:bg-green-950"
-              >
-                Sem {module.semestersOffered.join(", ")}
-              </Badge>
+            {isNTU && module.dept && (
+              <Badge variant="outline">{module.dept}</Badge>
             )}
+            {!isNTU &&
+              "semestersOffered" in module &&
+              module.semestersOffered &&
+              module.semestersOffered.length > 0 && (
+                <Badge
+                  variant="outline"
+                  className="bg-green-50 dark:bg-green-950"
+                >
+                  Sem {module.semestersOffered.join(", ")}
+                </Badge>
+              )}
           </div>
         </CardContent>
       )}
