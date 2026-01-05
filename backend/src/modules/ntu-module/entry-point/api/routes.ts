@@ -14,7 +14,7 @@ export function defineNTUModuleRoutes(expressApp: Application) {
    * @desc Sync all NTU modules from JSON file with embeddings
    * @access Public (should be protected in production)
    */
-  ntuModuleRouter.post("/sync", ntuModuleController.syncModules);
+  // ntuModuleRouter.post("/sync", ntuModuleController.syncModules);
 
   /**
    * @route GET /api/ntu-modules/search
