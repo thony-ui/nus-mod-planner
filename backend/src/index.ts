@@ -35,7 +35,6 @@ defineProgrammeRoutes(app);
 
 const port = process.env.USER_SERVICE_PORT || 8000;
 let server: Server;
-// test
 server = app.listen(port, () => {
   console.log(`Backend server is running on port ${port}!`);
 });
